@@ -75,8 +75,8 @@ def process_predict():
             youtube_url = predict_attr['youtube_url']
             app.logger.info("predict request succeeded")
             print youtube_url
-            test_download_video.delay(youtube_url)
-            #result = add_together.delay(23, 42)
+            #test_download_video.delay(youtube_url)
+            result = add_together.delay(23, 42)
             return "Generating predictions for the following URL: " + youtube_url
 
     data = {
