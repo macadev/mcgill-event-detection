@@ -2,6 +2,7 @@ from flask import Flask, request, json, Response
 from videoextractor import VideoExtractor
 from celery import Celery
 import logging
+import os
 
 # Initialize Web Server along with Celery
 
@@ -125,4 +126,8 @@ def add_together(a, b):
     return a + b
 
 if __name__ == '__main__':
-    app.run()
+    port_num = os.environ.get('PORT')
+    if port_num is not None:
+        app.run(host='0.0.0.0', port=int(port_num))
+    else:
+        app.run()
