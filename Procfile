@@ -1,1 +1,1 @@
-web: gunicorn project:EventDetectionWebServer
+web: python EventDetectionWebServer.py

@@ -124,5 +124,5 @@ def add_together(a, b):
     print "Running add_together"
     return a + b
 
-#if __name__ == '__main__':
-#    app.run()
+if __name__ == '__main__':
+    app.run()
