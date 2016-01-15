@@ -19,7 +19,7 @@ file_handler = logging.FileHandler('app.log')
 app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 
-celery = Celery(app.name, broker=app.config['BROKER_URL'])
+celery = Celery(app.name, broker=redis_url)
 celery.conf.update(app.config)
 
 '''
