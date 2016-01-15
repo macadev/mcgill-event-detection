@@ -7,14 +7,19 @@ import os
 # Initialize Web Server along with Celery
 
 app = Flask(__name__)
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+
+redis_url = os.environ.get('REDIS_URL')
+if redis_url is None:
+    redis_url = 'redis://localhost:6379/0'
+
+app.config['BROKER_URL'] = redis_url
+app.config['CELERY_RESULT_BACKEND'] = redis_url
 
 file_handler = logging.FileHandler('app.log')
 app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 
-celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery = Celery(app.name, broker=app.config['BROKER_URL'])
 celery.conf.update(app.config)
 
 '''
