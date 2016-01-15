@@ -20,7 +20,6 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 
 celery = Celery(app.name, broker=redis_url)
-#celery.conf.update(app.config)
 celery.conf.update(BROKER_URL=redis_url,
                 CELERY_RESULT_BACKEND=redis_url)
 
