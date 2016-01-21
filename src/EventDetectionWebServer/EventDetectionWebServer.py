@@ -1,5 +1,6 @@
 from flask import Flask, request, json, Response
 from videoextractor import VideoExtractor
+from ../computer_vision_engine/pallete/feature_extractor/ROI_extractor import *
 from celery import Celery
 from flask.ext.mail import Mail, Message
 import logging
@@ -96,6 +97,9 @@ def process_predict():
 
             # TODO: Obtain the coordinates of the mask through OpenCV
             # TODO: PLUG IN CV ENGINE CODE HERE
+
+            ROI_extractor.main()
+
 
             # Test send mail to user
             print "sending email to user"
