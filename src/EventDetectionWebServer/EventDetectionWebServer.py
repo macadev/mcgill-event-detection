@@ -22,14 +22,14 @@ app.config.update(
     MAIL_SERVER='smtp.gmail.com',
     MAIL_PORT= 465,
     MAIL_USERNAME = 'eventdetectionmcgill@gmail.com',
-    MAIL_PASSWORD = '',
+    MAIL_PASSWORD = 'designproject',
     MAIL_USE_TLS = False,
     MAIL_USE_SSL = True
 )
 
-file_handler = logging.FileHandler('app.log')
-app.logger.addHandler(file_handler)
-app.logger.setLevel(logging.INFO)
+#file_handler = logging.FileHandler('app.log')
+#app.logger.addHandler(file_handler)
+#app.logger.setLevel(logging.INFO)
 
 # Initialize Flask-Mail
 mail = Mail(app)
@@ -75,7 +75,7 @@ def api_hello():
     if 'name' in request.args:
         return 'Hello ' + request.args['name']
     else:
-        return "Hello Anonymous"
+        return "Hello Anonymous, the server is up."
 
 '''
 Client has to send a POST request with a JSON object that follows the
@@ -162,7 +162,7 @@ def add_together(a, b):
 def send_email(email, youtube_url,results):
     print "In send_mail() function"
     text = "Hello! You requested predictions for: " + youtube_url + " Hey Steve! We targeted your email to test the platform. Sorry if you get a ton of them!"
-    msg = Message('Hey there!', sender='eventdetectionmcgill@google.com', recipients=[email])
+    msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
     msg.body = text
     with app.app_context():
         mail.send(msg)
