@@ -59,7 +59,9 @@ if __name__ == '__main__':
         frame = cv2.imread("../../../../resources/image_samples/camera-man.png", 1)
 
     if(args["mask"]):
-        bounding_box = np.array([[75, 200], [150, 200], [150, 350], [75, 350]])
+        #bounding_box = np.array([[75, 200], [150, 200], [150, 350], [75, 350]])
+        bounding_box = np.array([[50, 50], [125, 50], [125, 150], [50, 150]])
+        #bounding_box = np.array([[600, 300], [700, 300], [700, 400], [600, 300]])
         mask = np.zeros(frame.shape[:2], np.uint8)
         cv2.fillPoly(mask, [bounding_box], (255, 255, 255))
     else:

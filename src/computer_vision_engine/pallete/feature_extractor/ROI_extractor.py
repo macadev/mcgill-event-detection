@@ -43,7 +43,7 @@ def main():
     # otherwise, load the video
     else:
         camera = cv2.VideoCapture(args["video"])
-        fps = camera.get(cv2.cv.CV_CAP_PROP_FPS) 
+        fps = camera.get(cv2.cv.CV_CAP_PROP_FPS)
 
     # setup the mouse callback
     cv2.namedWindow("frame")
@@ -126,7 +126,7 @@ def main():
             roiHist = cv2.calcHist([roi], [0], None, [16], [0, 180])
             roiHist = cv2.normalize(roiHist, roiHist, 0, 255, cv2.NORM_MINMAX)
             roiBox = (tl[0], tl[1], br[0], br[1])
-            
+
             camera.set(cv2.cv.CV_CAP_PROP_POS_FRAMES, 0)
         # if the 'q' key is pressed, stop the loop
         elif key == ord("q"):
@@ -137,7 +137,6 @@ def main():
 
 def track_points(frame, pts):
     # loop over the set of tracked points
-    print pts[-1]
     for i in np.arange(1, len(pts)):
         # if points are null, ignore
         if pts[i-1] is None or pts[i] is None:

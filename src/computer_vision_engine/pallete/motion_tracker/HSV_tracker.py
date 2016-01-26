@@ -14,6 +14,11 @@ class Tracker:
         self.feature_extractor = HSVExtractor()
 
         self.camera = camera
+        self.buff = 32
+        self.pts = deque(maxlen=32)
+        self.direction = ""
+        self.counter = self.dX = self.dY = 0
+
         '''self.lowerHSVBound = lower
         self.upperHSVBound = upper
         self.buff = buff
@@ -36,16 +41,15 @@ class Tracker:
         cv2.fillPoly(mask, [roi], (255, 255, 255))
         return mask
 
-    def track_object(self, roi, timestamp):
+    def track_object(self, roi_hist, roi, timestamp):
 
         camera = cv2.VideoCapture(self.camera)
         fps = camera.get(cv2.cv.CV_CAP_PROP_FPS)
 
         #cv2.cv.SetCaptureProperty(camera, cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp);
-        camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
-
+        #camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
+        '''
         (grabbed, frame) = camera.read()
-
         roi_mask = self.roi_to_mask(roi, frame)
         #roi_hist = self.feature_extractor.get_histogram(frame, roi_mask)
 
@@ -57,7 +61,7 @@ class Tracker:
 
         #cv2.cv.SetCaptureProperty(camera, cv2.cv.CV_CAP_PROP_POS_MSEC, 0);
         camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, 0)
-
+        '''
         termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 
         while 1:
@@ -74,10 +78,19 @@ class Tracker:
 
             if(backProj.any()):
                 (r, roi) = cv2.CamShift(backProj, roi, termination)
-                pts = np.int0(cv2.cv.BoxPooints(r))
+                pts = np.int0(cv2.cv.BoxPoints(r))
                 cv2.polylines(frame, [pts], True, (255, 0, 0), 2)
+                ((c_x, c_y),__, _) = r
 
-            cv2.imshow("frame", frame)
+                self.pts.appendleft(((int)(c_x), (int)(c_y)))
+
+                cv2.imshow("frame", frame)
+
+            self.track_points(frame)
+
+            self.draw_text(frame)
+
+            self.draw_frame(frame)
 
             '''center, x, y, radius = self.find_max_contour(mask)
 
@@ -186,6 +199,14 @@ class Tracker:
         return center, x, y, radius
 
 if __name__ == '__main__':
-    tracker = Tracker(camera = "../../../resources/video_samples/sample2.mp4")
-    roi = np.array([[450, 200], [500, 200], [500, 300], [450, 300]])
-    tracker.track_object(roi, 1000)
+    car_src = "../../../resources/image_samples/tennis_man.png"
+    car = cv2.imread(car_src, -1)
+    car = cv2.cvtColor(car, cv2.COLOR_BGR2HSV)
+    roi_hist = cv2.calcHist([car], [0], None, [16], [0, 180])
+    roi_hist = cv2.normalize(roi_hist, roi_hist, 0, 255, cv2.NORM_MINMAX)
+
+    tracker = Tracker(camera = "../../../resources/video_samples/sample3.mp4")
+    #roi = np.array([[450, 200], [500, 200], [500, 300], [450, 300]])
+    (w, h) = car.shape[:2]
+
+    tracker.track_object(roi_hist, (0, 0, w, h), 1000)
