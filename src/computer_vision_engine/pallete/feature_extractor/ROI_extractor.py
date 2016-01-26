@@ -8,6 +8,7 @@ import cv2
 frame = None
 roiPts = []
 inputMode = False
+points = []
 
 def selectROI(event, x, y, flags, param):
     # grab the reference to the current frame, list of ROI
@@ -78,9 +79,16 @@ def main():
                     #cv2.imshow("backproj", backProj)
                     (r, roiBox) = cv2.CamShift(backProj, roiBox, termination)
                     pts = np.int0(cv2.cv.BoxPoints(r))
-                    cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
+                    points.append(pts[0])
+                    p = pts[:2]
+                    l = pts[2:]
+                    cv2.polylines(frame, [pts], True, (255, 0, 0), 4)
+                    cv2.polylines(frame, [p], True, (0, 255, 0), 2)
+                    cv2.polylines(frame, [l], True, (0, 0, 255), 2)
+                    track_points(frame, points)
             except:
-                print "."
+                pass
+                #print "."
 
         # show the frame and record if the user presses a key
         cv2.imshow("frame", frame)
@@ -126,6 +134,42 @@ def main():
     # cleanup the camera and close any open windows
     camera.release()
     cv2.destroyAllWindows()
+
+def track_points(frame, pts):
+    # loop over the set of tracked points
+    print pts[-1]
+    for i in np.arange(1, len(pts)):
+        # if points are null, ignore
+        if pts[i-1] is None or pts[i] is None:
+            continue
+        if len(pts) > 10:
+
+            # check to see if enough points have been accumulated in the buffer
+            if self.counter >= 10 and i == 1 and pts[-10] is not None:
+                # compute the difference between x and y
+                # re-initialize the direction
+                dX = pts[-10][0] - pts[i][0]
+                dY = pts[-10][1] - pts[i][1]
+                (dirX, dirY) = ("", "")
+
+                # ensure significant movement in both directions
+                if np.abs(dX) > 20:
+                    dirX = "East" if np.sign(dX) == 1 else "West"
+                if np.abs(dY) > 20:
+                    dirY = "North" if np.sign(dY) == 1 else "South"
+
+                # handle when both directions are non-empty
+                if dirX != "" and dirY != "":
+                    direction = "{}-{}".format(dirY, dirX)
+
+                # otherwise, only one direction is empty
+                else:
+                    direction = dirX if dirX != "" else dirY
+
+        # otherwise compute the thickness of the line and draw connecting lines
+        thickness = int(np.sqrt(self.buff / float(i+1)) * 2.5)
+        cv2.line(frame, pts[i-1], pts[i], (0, 0, 255), thickness)
+
 
 if __name__ == "__main__":
     main()

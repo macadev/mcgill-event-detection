@@ -1,7 +1,7 @@
 import cv2
 from collections import deque
 import numpy as np
-from UserInput.Motion import *
+from feature_extractor.HSV_extractor import *
 #from UserInput.Drawing import *
 
 __author__ = 'yarden'
@@ -10,8 +10,11 @@ __author__ = 'yarden'
 class Tracker:
 
     def __init__(self, lower=(0, 0, 0), upper=(255, 255, 255), buff=32, r=10, objects=1, drawing=True, camera=0):
+
+        self.feature_extractor = HSVExtractor()
+
         self.camera = camera
-        self.lowerHSVBound = lower
+        '''self.lowerHSVBound = lower
         self.upperHSVBound = upper
         self.buff = buff
         self.objects = objects
@@ -20,7 +23,7 @@ class Tracker:
         self.counter = self.dX = self.dY = 0
         self.direction = ""
         self.drawing = True
-        self.motion = Motion(init_motion=False if camera==0 else True)
+        self.motion = Motion(init_motion=False if camera==0 else True)'''
 
     def set_lower_hsv_bounds(self, lower):
         self.lowerHSVBound = lower
@@ -28,21 +31,55 @@ class Tracker:
     def set_upper_hsv_bounds(self, upper):
         self.upperHSVBound = upper
 
-    def track_object(self):
-        camera = cv2.VideoCapture(0)
-        #if self.camera == 'camera.avi':
-        if self.camera != '0':
-            camera = cv2.VideoCapture(self.camera)
+    def roi_to_mask(self, roi, frame):
+        mask = np.zeros(frame.shape[:2], np.uint8)
+        cv2.fillPoly(mask, [roi], (255, 255, 255))
+        return mask
+
+    def track_object(self, roi, timestamp):
+
+        camera = cv2.VideoCapture(self.camera)
+        fps = camera.get(cv2.cv.CV_CAP_PROP_FPS)
+
+        #cv2.cv.SetCaptureProperty(camera, cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp);
+        camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
+
+        (grabbed, frame) = camera.read()
+
+        roi_mask = self.roi_to_mask(roi, frame)
+        #roi_hist = self.feature_extractor.get_histogram(frame, roi_mask)
+
+        #roi_hist = cv2.calcHist([self.feature_extractor.convert_to_HSV(frame)],[0],roi_mask,[256],[0,256])
+        roi_box = frame[600:700, 300:400]
+        roi_hist = cv2.calcHist([roi_box], [0], None, [16], [0, 180])
+        roi_hist = cv2.normalize(roi_hist, roi_hist, 0, 255, cv2.NORM_MINMAX)
+
+
+        #cv2.cv.SetCaptureProperty(camera, cv2.cv.CV_CAP_PROP_POS_MSEC, 0);
+        camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, 0)
+
+        termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
+
         while 1:
             (grabbed, frame) = camera.read()
-            frame = cv2.flip(frame, 1)
+            #frame = cv2.flip(frame, 1)
             if not grabbed:
                 print "error fetching camera."
                 break
 
-            mask = self.construct_mask(frame)
+            #mask = self.construct_mask(frame)
 
-            center, x, y, radius = self.find_max_contour(mask)
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            backProj = cv2.calcBackProject([hsv], [0], roi_hist, [0, 180], 1)
+
+            if(backProj.any()):
+                (r, roi) = cv2.CamShift(backProj, roi, termination)
+                pts = np.int0(cv2.cv.BoxPooints(r))
+                cv2.polylines(frame, [pts], True, (255, 0, 0), 2)
+
+            cv2.imshow("frame", frame)
+
+            '''center, x, y, radius = self.find_max_contour(mask)
 
             self.draw_enclosing_circle(center, x, y, radius, frame)
 
@@ -51,8 +88,8 @@ class Tracker:
             self.draw_text(frame)
 
             self.draw_frame(frame)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            '''
+            if cv2.waitKey((int)(fps)) & 0xFF == ord('q'):
                 break
         camera.release()
         cv2.destroyAllWindows()
@@ -147,3 +184,8 @@ class Tracker:
 
 
         return center, x, y, radius
+
+if __name__ == '__main__':
+    tracker = Tracker(camera = "../../../resources/video_samples/sample2.mp4")
+    roi = np.array([[450, 200], [500, 200], [500, 300], [450, 300]])
+    tracker.track_object(roi, 1000)
