@@ -104,7 +104,6 @@ def process_predict():
 
             # TODO: Obtain the coordinates of the mask through OpenCV
             # TODO: PLUG IN CV ENGINE CODE HERE
-
             timestamps = ROI_extractor.main()
 
             # Test send mail to user
@@ -112,8 +111,6 @@ def process_predict():
             send_email.delay(user_email, youtube_url, timestamps)
             print "Succeeded in sending email"
 
-            # Test down load video
-            #test_download_video.delay(youtube_url)
             result = add_together.delay(23, 42)
             return "Generating predictions for the following URL: " + youtube_url
 
@@ -158,9 +155,19 @@ def not_found(error=None):
 ### HELPER FUNCTIONS ###
 
 @celery.task
+def process_motion_tracking_request(youtube_url, email):
+    video_extractor = VideoExtractor()
+    video_extractor.download_video(youtube_url)
+
+
+
+@celery.task
 def test_download_video(youtube_url):
     videoextractor = VideoExtractor()
     videoextractor.download_video(youtube_url)
+
+    bounding_box_path = '../../resources/image_samples/tennis_man.png'
+    
 
 @celery.task
 def add_together(a, b):
