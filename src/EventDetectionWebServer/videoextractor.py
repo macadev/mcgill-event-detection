@@ -15,7 +15,7 @@ class VideoExtractor():
     def download_video(self, url='https://www.youtube.com/watch?v=jO5IaAKTKsQ'):
 
         ydl_opts = {
-            'outtmpl': 'dled_video ' + self.video_id + '.mp4',
+            'outtmpl': 'dled_video' + str(self.video_id) + '.mp4',
             'progress_hooks': [my_hook],
         }
 

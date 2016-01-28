@@ -161,7 +161,7 @@ def process_motion_tracking_request(youtube_url, email):
     video_id = video_id + 1
     video_extractor.download_video(youtube_url)
     bounding_box_path = '../../resources/image_samples/tennis_man.png'
-    video_path = 'dled_video' + my_id + '.mp4'
+    video_path = 'dled_video' + str(my_id) + '.mp4'
     timestamps = start(video_path, bounding_box_path)
     timestamps_email = ', '.join(map(str, timestamps))
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
@@ -169,6 +169,7 @@ def process_motion_tracking_request(youtube_url, email):
     msg.body = text
     with app.app_context():
         mail.send(msg)
+    os.remove(video_path)
 
 @celery.task
 def test_download_video(youtube_url):
