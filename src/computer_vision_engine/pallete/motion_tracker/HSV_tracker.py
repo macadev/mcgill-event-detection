@@ -1,9 +1,9 @@
 import cv2
 from collections import deque
 import numpy as np
-#from feature_extractor.HSV_extractor import *
-from computer_vision_engine.pallete.feature_extractor.HSV_extractor import HSVExtractor
-from computer_vision_engine.event_handler.event_logger import *
+from feature_extractor.HSV_extractor import *
+#from computer_vision_engine.pallete.feature_extractor.HSV_extractor import HSVExtractor
+#from computer_vision_engine.event_handler.event_logger import *
 
 __author__ = 'yarden'
 
@@ -71,7 +71,7 @@ class Tracker:
             #frame = cv2.flip(frame, 1)
             if not grabbed:
                 print "error fetching camera."
-                break
+                return self.timestamps
 
             #mask = self.construct_mask(frame)
 
@@ -92,10 +92,10 @@ class Tracker:
 
             if self.direction == "South-West":
                 time = camera.get(cv2.cv.CV_CAP_PROP_POS_MSEC)/1000
-                self.timestamps.append(timestamp)
+                self.timestamps.append(time)
 
-                if time > 5:
-                    return self.timestamps
+                #if time > 5:
+                    #return self.timestamps
 
             self.draw_text(frame)
 
@@ -228,9 +228,10 @@ if __name__ == '__main__':
     car = cv2.cvtColor(car, cv2.COLOR_BGR2HSV)
     roi_hist = cv2.calcHist([car], [0], None, [16], [0, 180])
     roi_hist = cv2.normalize(roi_hist, roi_hist, 0, 255, cv2.NORM_MINMAX)
-
+    video = "../../../resources/video_samples/sample3.mp4"
     tracker = Tracker(camera = "../../../resources/video_samples/sample3.mp4")
+    print start(video, car_src)
     #roi = np.array([[450, 200], [500, 200], [500, 300], [450, 300]])
     (w, h) = car.shape[:2]
 
-    tracker.track_object(roi_hist, (0, 0, w, h), 1000)
+   # tracker.track_object(roi_hist, (0, 0, w, h), 1000)
