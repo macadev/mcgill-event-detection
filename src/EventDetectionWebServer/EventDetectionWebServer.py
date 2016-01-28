@@ -6,7 +6,6 @@ sys.path.append('/home/ubuntu/projects/Event_Detection/src')
 sys.path.append('/home/ubuntu/projects/Event_Detection/src/EventDetectionWebServer')
 sys.path.append('/home/ubuntu/projects/Event_Detection/src/computer_vision_engine')
 
-print sys.path
 from videoextractor import VideoExtractor
 from computer_vision_engine.pallete.feature_extractor import ROI_extractor
 from celery import Celery
@@ -154,7 +153,6 @@ def not_found(error=None):
         'message': 'Not Found: ' + request.url,
     }
     resp = json.dumps(message)
-    resp.status_code = 404
     return resp
 
 ### HELPER FUNCTIONS ###
