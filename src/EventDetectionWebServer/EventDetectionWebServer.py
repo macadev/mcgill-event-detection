@@ -7,7 +7,7 @@ sys.path.append('/home/ubuntu/projects/Event_Detection/src/EventDetectionWebServ
 sys.path.append('/home/ubuntu/projects/Event_Detection/src/computer_vision_engine')
 
 from videoextractor import VideoExtractor
-from computer_vision_engine.pallete.feature_extractor import ROI_extractor
+from computer_vision_engine.pallete.motion_tracker.HSV_tracker import start
 from celery import Celery
 from flask.ext.mail import Mail, Message
 import logging
@@ -158,16 +158,14 @@ def not_found(error=None):
 def process_motion_tracking_request(youtube_url, email):
     video_extractor = VideoExtractor()
     video_extractor.download_video(youtube_url)
-
-
+    bounding_box_path = '../../resources/image_samples/tennis_man.png'
+    video_path = 'dled_video.mp4'
+    timestamps = start(video_path, bounding_box_path)
 
 @celery.task
 def test_download_video(youtube_url):
     videoextractor = VideoExtractor()
     videoextractor.download_video(youtube_url)
-
-    bounding_box_path = '../../resources/image_samples/tennis_man.png'
-    
 
 @celery.task
 def add_together(a, b):
