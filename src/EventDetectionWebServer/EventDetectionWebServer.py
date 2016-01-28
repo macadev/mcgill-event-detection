@@ -75,6 +75,12 @@ curl -H "Content-type: application/json" -X POST http://ec2-54-200-65-191.us-wes
 curl -H "Content-type: application/json" -X POST http://0.0.0.0:6060/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=uNTpPNo3LBg", "user_email":"danielmacario5@gmail.com"}'
 '''
 
+### SHARED VARIABLES ###
+
+
+''' variable used to give unique ID's to the downloaded videos '''
+video_id = 0
+
 ### ROUTES ###
 
 @app.route('/')
@@ -149,10 +155,13 @@ def not_found(error=None):
 
 @celery.task
 def process_motion_tracking_request(youtube_url, email):
-    video_extractor = VideoExtractor()
+    global video_id
+    video_extractor = VideoExtractor(video_id)
+    my_id = video_id
+    video_id = video_id + 1
     video_extractor.download_video(youtube_url)
     bounding_box_path = '../../resources/image_samples/tennis_man.png'
-    video_path = 'dled_video.mp4'
+    video_path = 'dled_video' + my_id + '.mp4'
     timestamps = start(video_path, bounding_box_path)
     timestamps_email = ', '.join(map(str, timestamps))
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email

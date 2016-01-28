@@ -5,21 +5,19 @@ __author__ = 'danielmacario'
 
 def my_hook(d):
     if d['status'] == 'finished':
-        print('Done downloading, now converting ...')
+        print('Done downloading.')
 
-ydl_opts = {
-    # 'format': 'bestaudio/best',
-    # 'postprocessors': [{
-    #     'key': 'FFmpegExtractAudio',
-    #     'preferredcodec': 'mp3',
-    #     'preferredquality': '192',
-    # }],
-    'outtmpl': 'dled_video.mp4',
-    'progress_hooks': [my_hook],
-}
+class VideoExtractor():
 
-class VideoExtractor:
+    def __init__(self, video_id):
+        self.video_id = video_id
 
     def download_video(self, url='https://www.youtube.com/watch?v=jO5IaAKTKsQ'):
+
+        ydl_opts = {
+            'outtmpl': 'dled_video ' + self.video_id + '.mp4',
+            'progress_hooks': [my_hook],
+        }
+
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
