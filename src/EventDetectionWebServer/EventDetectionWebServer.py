@@ -59,14 +59,14 @@ For this server to work properly you need three terminal windows doing the follo
 '''
 curl reference
 
-option	purpose
--X	specify HTTP request method e.g. POST
--H	specify request headers e.g. "Content-type: application/json"
--d	specify request data e.g. '{"message":"Hello Data"}'
---data-binary	specify binary request data e.g. @file.bin
--i	shows the response headers
--u	specify username and password e.g. "admin:secret"
--v	enables verbose mode which outputs info such as request and response headers and errors
+option  purpose
+-X  specify HTTP request method e.g. POST
+-H  specify request headers e.g. "Content-type: application/json"
+-d  specify request data e.g. '{"message":"Hello Data"}'
+--data-binary specify binary request data e.g. @file.bin
+-i  shows the response headers
+-u  specify username and password e.g. "admin:secret"
+-v  enables verbose mode which outputs info such as request and response headers and errors
 
 Useful for testing:
 
@@ -104,14 +104,7 @@ def process_predict():
 
             # TODO: Obtain the coordinates of the mask through OpenCV
             # TODO: PLUG IN CV ENGINE CODE HERE
-            timestamps = ROI_extractor.main()
-
-            # Test send mail to user
-            print "sending email to user"
-            send_email.delay(user_email, youtube_url, timestamps)
-            print "Succeeded in sending email"
-
-            result = add_together.delay(23, 42)
+            process_motion_tracking_request.delay(youtube_url, user_email)
             return "Generating predictions for the following URL: " + youtube_url
 
     data = {
@@ -161,6 +154,12 @@ def process_motion_tracking_request(youtube_url, email):
     bounding_box_path = '../../resources/image_samples/tennis_man.png'
     video_path = 'dled_video.mp4'
     timestamps = start(video_path, bounding_box_path)
+    timestamps_email = ', '.join(map(str, timestamps))
+    text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
+    msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
+    msg.body = text
+    with app.app_context():
+        mail.send(msg)
 
 @celery.task
 def test_download_video(youtube_url):
@@ -189,3 +188,4 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=int(port_num))
     else:
         app.run(debug=True)
+
