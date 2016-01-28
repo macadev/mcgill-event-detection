@@ -2,6 +2,7 @@
 import numpy as np
 import argparse
 import cv2
+import cv2
 
 # initialize the current frame of the video, along with the list of
 # ROI points along with whether or not this is input mode
@@ -24,6 +25,9 @@ def selectROI(event, x, y, flags, param):
         cv2.imshow("frame", frame)
 
 def main():
+
+    timestamps = [0.1, 1.6, 8]
+    return timestamps
     # construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-v", "--video",

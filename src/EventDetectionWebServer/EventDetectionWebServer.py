@@ -1,4 +1,12 @@
 from flask import Flask, request, json, Response
+import sys
+
+sys.path.append('/home/ubuntu/projects/Event_Detection')
+sys.path.append('/home/ubuntu/projects/Event_Detection/src')
+sys.path.append('/home/ubuntu/projects/Event_Detection/src/EventDetectionWebServer')
+sys.path.append('/home/ubuntu/projects/Event_Detection/src/computer_vision_engine')
+
+print sys.path
 from videoextractor import VideoExtractor
 from computer_vision_engine.pallete.feature_extractor import ROI_extractor
 from celery import Celery
@@ -98,11 +106,11 @@ def process_predict():
             # TODO: Obtain the coordinates of the mask through OpenCV
             # TODO: PLUG IN CV ENGINE CODE HERE
 
-            ROI_extractor.main()
+            timestamps = ROI_extractor.main()
 
             # Test send mail to user
             print "sending email to user"
-            send_email.delay(user_email, youtube_url, ['daniel'])
+            send_email.delay(user_email, youtube_url, timestamps)
             print "Succeeded in sending email"
 
             # Test down load video
@@ -163,8 +171,10 @@ def add_together(a, b):
 
 @celery.task
 def send_email(email, youtube_url,results):
+    timestamps_email = ', '.join(map(str, results))
     print "In send_mail() function"
-    text = "Hello! You requested predictions for: " + youtube_url + " Hey Steve! We targeted your email to test the platform. Sorry if you get a ton of them!"
+    print timestamps_email
+    text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtain by the CV engine!" + timestamps_email
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
     msg.body = text
     with app.app_context():
