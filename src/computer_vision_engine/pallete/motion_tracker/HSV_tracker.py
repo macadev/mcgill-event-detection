@@ -1,8 +1,9 @@
 import cv2
 from collections import deque
 import numpy as np
-from feature_extractor.HSV_extractor import *
-#from computer_vision_engine.event_handler.event_logger import *
+#from feature_extractor.HSV_extractor import *
+from computer_vision_engine.pallete.feature_extractor.HSV_extractor import HSVExtractor
+from computer_vision_engine.event_handler.event_logger import *
 
 __author__ = 'yarden'
 
@@ -85,9 +86,16 @@ class Tracker:
 
                 self.pts.appendleft(((int)(c_x), (int)(c_y)))
 
-                cv2.imshow("frame", frame)
+                #cv2.imshow("frame", frame)
 
             self.track_points(frame)
+
+            if self.direction == "South-West":
+                time = camera.get(cv2.cv.CV_CAP_PROP_POS_MSEC)/1000
+                self.timestamps.append(timestamp)
+
+                if time > 5:
+                    return self.timestamps
 
             self.draw_text(frame)
 
@@ -105,6 +113,7 @@ class Tracker:
             '''
             if cv2.waitKey((int)(fps)) & 0xFF == ord('q'):
                 break
+
         camera.release()
         cv2.destroyAllWindows()
 
@@ -148,7 +157,7 @@ class Tracker:
             cv2.line(frame, self.pts[i-1], self.pts[i], (0, 0, 255), thickness)
 
     def draw_frame(self, frame):
-        cv2.imshow('frame', frame)
+        #cv2.imshow('frame', frame)
         # if self.drawing:
         #    #easel = Drawing()
         #    cv2.setMouseCallback('frame', draw_circle, param=frame)
@@ -199,6 +208,19 @@ class Tracker:
 
 
         return center, x, y, radius
+
+
+def start(video, image):
+    bounding_box = cv2.imread(image, -1)
+    bounding_box = cv2.cvtColor(bounding_box, cv2.COLOR_BGR2HSV)
+    roi_hist = cv2.calcHist([bounding_box], [0], None, [16], [0, 180])
+    roi_hist = cv2.normalize(roi_hist, roi_hist, 0, 255, cv2.NORM_MINMAX)
+
+    tracker = Tracker(camera = video)
+    #roi = np.array([[450, 200], [500, 200], [500, 300], [450, 300]])
+    (w, h) = bounding_box.shape[:2]
+
+    return tracker.track_object(roi_hist, (0, 0, w, h), 1000)
 
 if __name__ == '__main__':
     car_src = "../../../resources/image_samples/tennis_man.png"
