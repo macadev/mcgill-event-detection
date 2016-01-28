@@ -84,10 +84,10 @@ def explore_match(win, img1, img2, kp_pairs, status = None, H = None):
     #img1 = np.reshape(img1, (h1, w1, 3))
 
    # img2 = cv2.cv.fromarray(img2)
-    img2 = np.resize(img2, (h2, w2)) 
+    #img2 = np.resize(img2, (h2, w2)) 
 
-#    cv2.imwrite("img2.png", img2)
- #   img2 = cv2.imread("img2.png", 0)
+    cv2.imwrite("img2.png", img2)
+    img2 = cv2.imread("img2.png", 0)
     vis[:h1, :w1] = img1
     vis[:h2, w1:w1+w2] = img2
     vis = cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR)

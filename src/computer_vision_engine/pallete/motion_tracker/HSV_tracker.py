@@ -2,7 +2,7 @@ import cv2
 from collections import deque
 import numpy as np
 from feature_extractor.HSV_extractor import *
-#from UserInput.Drawing import *
+#from computer_vision_engine.event_handler.event_logger import *
 
 __author__ = 'yarden'
 
@@ -12,12 +12,13 @@ class Tracker:
     def __init__(self, lower=(0, 0, 0), upper=(255, 255, 255), buff=32, r=10, objects=1, drawing=True, camera=0):
 
         self.feature_extractor = HSVExtractor()
-
         self.camera = camera
         self.buff = 32
         self.pts = deque(maxlen=32)
         self.direction = ""
         self.counter = self.dX = self.dY = 0
+
+        self.timestamps = []
 
         '''self.lowerHSVBound = lower
         self.upperHSVBound = upper
@@ -140,6 +141,7 @@ class Tracker:
                     # otherwise, only one direction is empty
                     else:
                         self.direction = dirX if dirX != "" else dirY
+
 
             # otherwise compute the thickness of the line and draw connecting lines
             thickness = int(np.sqrt(self.buff / float(i+1)) * 2.5)
