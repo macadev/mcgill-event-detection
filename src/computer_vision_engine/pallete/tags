@@ -1,0 +1,40 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+CAMshift	motion_tracker/CAMshift.py	/^class CAMshift:$/;"	c
+FLANN_INDEX_KDTREE	motion_tracker/find_obj.py	/^FLANN_INDEX_KDTREE = 1  # bug: flann enums are missing$/;"	v
+FLANN_INDEX_LSH	motion_tracker/find_obj.py	/^FLANN_INDEX_LSH    = 6$/;"	v
+HSVExtractor	feature_extractor/HSV_extractor.py	/^class HSVExtractor:$/;"	c
+HSV_Tracker	motion_tracker/HSV_tracker.py	/^class HSV_Tracker:$/;"	c
+RootSIFT	feature_extractor/SIFT_extractor.py	/^class RootSIFT:$/;"	c
+SIFT_Tracker	motion_tracker/SIFT_tracker.py	/^class SIFT_Tracker:$/;"	c
+__init__	feature_extractor/HSV_extractor.py	/^    def __init__(self, bins=(8, 12, 3)):$/;"	m	class:HSVExtractor
+__init__	feature_extractor/SIFT_extractor.py	/^        def __init__(self):$/;"	m	class:RootSIFT
+__init__	motion_tracker/CAMshift.py	/^    def __init__(self):$/;"	m	class:CAMshift
+__init__	motion_tracker/HSV_tracker.py	/^    def __init__(self)$/;"	m	class:HSV_Tracker
+__init__	motion_tracker/SIFT_tracker.py	/^    def __init__(self, num_clusters=1):$/;"	m	class:SIFT_Tracker
+convert_to_HSV	feature_extractor/HSV_extractor.py	/^    def convert_to_HSV(self, frame):$/;"	m	class:HSVExtractor
+convert_to_HSV	motion_tracker/CAMshift.py	/^    def convert_to_HSV(self, frame):$/;"	m	class:CAMshift
+detector	motion_tracker/SIFT_tracker.py	/^detector = cv2.FeatureDetector_create("SIFT")$/;"	v
+drawMatches	motion_tracker/SIFT_tracker.py	/^def drawMatches(img1, kp1, img2, kp2, matches):$/;"	f
+explore_match	motion_tracker/find_obj.py	/^def explore_match(win, img1, img2, kp_pairs, status = None, H = None):$/;"	f
+extract_features	feature_extractor/HSV_extractor.py	/^    def extract_features(self, frame, mask):$/;"	m	class:HSVExtractor
+extract_features	feature_extractor/SIFT_extractor.py	/^        def extract_features(self, image, kps, eps=1e-7):$/;"	m	class:RootSIFT
+extractor	motion_tracker/SIFT_tracker.py	/^extractor = cv2.DescriptorExtractor_create("SIFT")$/;"	v
+filter_matches	motion_tracker/find_obj.py	/^def filter_matches(kp1, kp2, matches, ratio = 0.75):$/;"	f
+get_histogram	feature_extractor/HSV_extractor.py	/^    def get_histogram(self, frame, mask):$/;"	m	class:HSVExtractor
+gray	motion_tracker/SIFT_tracker.py	/^gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)$/;"	v
+image	motion_tracker/SIFT_tracker.py	/^image = cv2.imread("..\/..\/..\/resources\/image_samples\/sample-1.jpg")$/;"	v
+init_feature	motion_tracker/find_obj.py	/^def init_feature(name):$/;"	f
+kps	motion_tracker/SIFT_tracker.py	/^kps = detector.detect(gray)$/;"	v
+match_and_draw	motion_tracker/find_obj.py	/^        def match_and_draw(win):$/;"	f	function:explore_match.onmouse
+onmouse	motion_tracker/find_obj.py	/^    def onmouse(event, x, y, flags, param):$/;"	f	function:explore_match
+prepare_frame	motion_tracker/SIFT_tracker.py	/^    def prepare_frame(self, frame):$/;"	m	class:SIFT_Tracker
+rs	motion_tracker/SIFT_tracker.py	/^rs = RootSIFT()$/;"	v
+sift	motion_tracker/SIFT_tracker.py	/^sift = cv2.drawKeypoints(gray, kps)$/;"	v
+track	motion_tracker/CAMshift.py	/^    def track(self):$/;"	m	class:CAMshift
+track_object	motion_tracker/SIFT_tracker.py	/^    def track_object(self, camera='0', object_src=None, min_radius=10):$/;"	m	class:SIFT_Tracker
+tracker	motion_tracker/SIFT_tracker.py	/^    tracker = SIFT_Tracker()$/;"	v
