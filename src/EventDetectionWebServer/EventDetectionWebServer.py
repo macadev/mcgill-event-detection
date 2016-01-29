@@ -167,12 +167,13 @@ def process_motion_tracking_request(youtube_url, email):
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
     msg.body = text
-    video_attachment_path = '../computer_vision_engine/pallete/motion_tracker/output' + my_id
+    video_attachment_path = 'output' + my_id + '.avi'
     with app.open_resource(video_attachment_path) as fp:
         msg.attach(video_attachment_path, 'video/avi', fp.read())
     with app.app_context():
         mail.send(msg)
     os.remove(video_path)
+    os.remove(video_attachment_path)
 
 @celery.task
 def test_download_video(youtube_url):
