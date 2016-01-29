@@ -1,8 +1,8 @@
 import cv2
 from collections import deque
 import numpy as np
-from feature_extractor.HSV_extractor import *
-#from computer_vision_engine.pallete.feature_extractor.HSV_extractor import HSVExtractor
+#from feature_extractor.HSV_extractor import *
+from computer_vision_engine.pallete.feature_extractor.HSV_extractor import *
 #from computer_vision_engine.event_handler.event_logger import *
 
 __author__ = 'yarden'

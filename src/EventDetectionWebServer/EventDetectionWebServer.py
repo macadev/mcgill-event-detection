@@ -7,7 +7,7 @@ sys.path.append('/home/ubuntu/projects/Event_Detection/src/EventDetectionWebServ
 sys.path.append('/home/ubuntu/projects/Event_Detection/src/computer_vision_engine')
 
 from videoextractor import VideoExtractor
-from computer_vision_engine.pallete.feature_extractor import ROI_extractor
+from computer_vision_engine.pallete.motion_tracker.HSV_tracker import start
 from celery import Celery
 from flask.ext.mail import Mail, Message
 import logging
@@ -59,14 +59,14 @@ For this server to work properly you need three terminal windows doing the follo
 '''
 curl reference
 
-option	purpose
--X	specify HTTP request method e.g. POST
--H	specify request headers e.g. "Content-type: application/json"
--d	specify request data e.g. '{"message":"Hello Data"}'
---data-binary	specify binary request data e.g. @file.bin
--i	shows the response headers
--u	specify username and password e.g. "admin:secret"
--v	enables verbose mode which outputs info such as request and response headers and errors
+option  purpose
+-X  specify HTTP request method e.g. POST
+-H  specify request headers e.g. "Content-type: application/json"
+-d  specify request data e.g. '{"message":"Hello Data"}'
+--data-binary specify binary request data e.g. @file.bin
+-i  shows the response headers
+-u  specify username and password e.g. "admin:secret"
+-v  enables verbose mode which outputs info such as request and response headers and errors
 
 Useful for testing:
 
@@ -74,6 +74,12 @@ curl -X POST http://127.0.0.1:5000
 curl -H "Content-type: application/json" -X POST http://ec2-54-200-65-191.us-west-2.compute.amazonaws.com/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=uNTpPNo3LBg"}'
 curl -H "Content-type: application/json" -X POST http://0.0.0.0:6060/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=uNTpPNo3LBg", "user_email":"danielmacario5@gmail.com"}'
 '''
+
+### SHARED VARIABLES ###
+
+
+''' variable used to give unique ID's to the downloaded videos '''
+video_id = 0
 
 ### ROUTES ###
 
@@ -104,17 +110,7 @@ def process_predict():
 
             # TODO: Obtain the coordinates of the mask through OpenCV
             # TODO: PLUG IN CV ENGINE CODE HERE
-
-            timestamps = ROI_extractor.main()
-
-            # Test send mail to user
-            print "sending email to user"
-            send_email.delay(user_email, youtube_url, timestamps)
-            print "Succeeded in sending email"
-
-            # Test down load video
-            #test_download_video.delay(youtube_url)
-            result = add_together.delay(23, 42)
+            process_motion_tracking_request.delay(youtube_url, user_email)
             return "Generating predictions for the following URL: " + youtube_url
 
     data = {
@@ -158,6 +154,24 @@ def not_found(error=None):
 ### HELPER FUNCTIONS ###
 
 @celery.task
+def process_motion_tracking_request(youtube_url, email):
+    global video_id
+    video_extractor = VideoExtractor(video_id)
+    my_id = video_id
+    video_id = video_id + 1
+    video_extractor.download_video(youtube_url)
+    bounding_box_path = '../../resources/image_samples/tennis_man.png'
+    video_path = 'dled_video' + str(my_id) + '.mp4'
+    timestamps = start(video_path, bounding_box_path)
+    timestamps_email = ', '.join(map(str, timestamps))
+    text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
+    msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
+    msg.body = text
+    with app.app_context():
+        mail.send(msg)
+    os.remove(video_path)
+
+@celery.task
 def test_download_video(youtube_url):
     videoextractor = VideoExtractor()
     videoextractor.download_video(youtube_url)
@@ -184,3 +198,4 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=int(port_num))
     else:
         app.run(debug=True)
+
