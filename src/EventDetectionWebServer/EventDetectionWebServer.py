@@ -157,16 +157,19 @@ def not_found(error=None):
 def process_motion_tracking_request(youtube_url, email):
     global video_id
     video_extractor = VideoExtractor(video_id)
-    my_id = video_id
+    my_id = str(video_id)
     video_id = video_id + 1
     video_extractor.download_video(youtube_url)
     bounding_box_path = '../../resources/image_samples/tennis_man.png'
-    video_path = 'dled_video' + str(my_id) + '.mp4'
-    timestamps = start(video_path, bounding_box_path)
+    video_path = 'dled_video' + my_id + '.mp4'
+    timestamps = start(video_path, bounding_box_path, my_id)
     timestamps_email = ', '.join(map(str, timestamps))
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
     msg.body = text
+    video_attachment_path = '../computer_vision_engine/pallete/motion_tracker/output' + my_id
+    with app.open_resource(video_attachment_path) as fp:
+        msg.attach(video_attachment_path, 'video/avi', fp.read())
     with app.app_context():
         mail.send(msg)
     os.remove(video_path)
