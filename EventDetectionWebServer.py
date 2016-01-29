@@ -1,6 +1,15 @@
 from flask import Flask, request, json, Response
+import sys
+
+sys.path.append('/home/ubuntu/projects/Event_Detection')
+sys.path.append('/home/ubuntu/projects/Event_Detection/src')
+sys.path.append('/home/ubuntu/projects/Event_Detection/src/EventDetectionWebServer')
+sys.path.append('/home/ubuntu/projects/Event_Detection/src/computer_vision_engine')
+
 from videoextractor import VideoExtractor
+from computer_vision_engine.pallete.motion_tracker.HSV_tracker import start
 from celery import Celery
+from flask.ext.mail import Mail, Message
 import logging
 import os
 
@@ -12,13 +21,28 @@ redis_url = os.environ.get('REDIS_URL')
 if redis_url is None:
     redis_url = 'redis://localhost:6379/0'
 
+# Redis and Celery configuration
 app.config['BROKER_URL'] = redis_url
 app.config['CELERY_RESULT_BACKEND'] = redis_url
 
-file_handler = logging.FileHandler('app.log')
-app.logger.addHandler(file_handler)
-app.logger.setLevel(logging.INFO)
+# Flask-Mail module configuration
+app.config.update(
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT= 465,
+    MAIL_USERNAME = 'eventdetectionmcgill@gmail.com',
+    MAIL_PASSWORD = 'designproject',
+    MAIL_USE_TLS = False,
+    MAIL_USE_SSL = True
+)
 
+#file_handler = logging.FileHandler('app.log')
+#app.logger.addHandler(file_handler)
+#app.logger.setLevel(logging.INFO)
+
+# Initialize Flask-Mail
+mail = Mail(app)
+
+# Initialize Celery worker
 celery = Celery(app.name, broker=redis_url)
 celery.conf.update(BROKER_URL=redis_url,
                 CELERY_RESULT_BACKEND=redis_url)
@@ -35,21 +59,28 @@ For this server to work properly you need three terminal windows doing the follo
 '''
 curl reference
 
-option	purpose
--X	specify HTTP request method e.g. POST
--H	specify request headers e.g. "Content-type: application/json"
--d	specify request data e.g. '{"message":"Hello Data"}'
---data-binary	specify binary request data e.g. @file.bin
--i	shows the response headers
--u	specify username and password e.g. "admin:secret"
--v	enables verbose mode which outputs info such as request and response headers and errors
+option  purpose
+-X  specify HTTP request method e.g. POST
+-H  specify request headers e.g. "Content-type: application/json"
+-d  specify request data e.g. '{"message":"Hello Data"}'
+--data-binary specify binary request data e.g. @file.bin
+-i  shows the response headers
+-u  specify username and password e.g. "admin:secret"
+-v  enables verbose mode which outputs info such as request and response headers and errors
 
 Useful for testing:
 
 curl -X POST http://127.0.0.1:5000
-curl -H "Content-type: application/json" -X POST http://127.0.0.1:5000/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=uNTpPNo3LBg"}'
-
+curl -H "Content-type: application/json" -X POST http://ec2-54-200-65-191.us-west-2.compute.amazonaws.com/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=uNTpPNo3LBg"}'
+curl -H "Content-type: application/json" -X POST http://0.0.0.0:6060/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=uNTpPNo3LBg", "user_email":"danielmacario5@gmail.com"}'
+curl -H "Content-type: application/json" -X POST http://127.0.0.1:5000/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=DLtvrv4isLA", "user_email":"danielmacario5@gmail.com"}'
 '''
+
+### SHARED VARIABLES ###
+
+
+''' variable used to give unique ID's to the downloaded videos '''
+video_id = 0
 
 ### ROUTES ###
 
@@ -59,7 +90,7 @@ def api_hello():
     if 'name' in request.args:
         return 'Hello ' + request.args['name']
     else:
-        return "Hello Anonymous"
+        return "Hello Anonymous, the server is up."
 
 '''
 Client has to send a POST request with a JSON object that follows the
@@ -72,12 +103,15 @@ def process_predict():
     if request.headers['Content-Type'] == 'application/json':
         predict_attr = request.get_json()
 
-        if predict_attr.get('youtube_url'):
+        if predict_attr.get('youtube_url') and predict_attr.get('user_email'):
             youtube_url = predict_attr['youtube_url']
-            app.logger.info("predict request succeeded")
             print youtube_url
-            #test_download_video.delay(youtube_url)
-            result = add_together.delay(23, 42)
+            user_email = predict_attr['user_email']
+            print user_email
+
+            # TODO: Obtain the coordinates of the mask through OpenCV
+            # TODO: PLUG IN CV ENGINE CODE HERE
+            process_motion_tracking_request.delay(youtube_url, user_email)
             return "Generating predictions for the following URL: " + youtube_url
 
     data = {
@@ -116,10 +150,30 @@ def not_found(error=None):
         'message': 'Not Found: ' + request.url,
     }
     resp = json.dumps(message)
-    resp.status_code = 404
     return resp
 
 ### HELPER FUNCTIONS ###
+
+@celery.task
+def process_motion_tracking_request(youtube_url, email):
+    global video_id
+    video_extractor = VideoExtractor(video_id)
+    my_id = str(video_id)
+    video_id = video_id + 1
+    video_extractor.download_video(youtube_url)
+    bounding_box_path = '../../resources/image_samples/tennis_man.png'
+    video_path = 'dled_video' + my_id + '.mp4'
+    timestamps = start(video_path, bounding_box_path, my_id)
+    timestamps_email = ', '.join(map(str, timestamps))
+    text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
+    msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
+    msg.body = text
+    video_attachment_path = '../computer_vision_engine/pallete/motion_tracker/output' + my_id + '.avi'
+    with app.open_resource(video_attachment_path) as fp:
+        msg.attach(video_attachment_path, 'video/avi', fp.read())
+    with app.app_context():
+        mail.send(msg)
+    os.remove(video_path)
 
 @celery.task
 def test_download_video(youtube_url):
@@ -131,9 +185,21 @@ def add_together(a, b):
     print "Running add_together"
     return a + b
 
+@celery.task
+def send_email(email, youtube_url,results):
+    timestamps_email = ', '.join(map(str, results))
+    print "In send_mail() function"
+    print timestamps_email
+    text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtain by the CV engine!" + timestamps_email
+    msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
+    msg.body = text
+    with app.app_context():
+        mail.send(msg)
+
 if __name__ == '__main__':
     port_num = os.environ.get('PORT')
     if port_num is not None:
         app.run(host='0.0.0.0', port=int(port_num))
     else:
-        app.run()
+        app.run(debug=True)
+
