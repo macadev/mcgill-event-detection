@@ -48,6 +48,13 @@ class Tracker:
         camera = cv2.VideoCapture(self.camera)
         fps = camera.get(cv2.cv.CV_CAP_PROP_FPS)
 
+        (grabbed, frame) = camera.read()
+
+        fourcc = cv2.cv.CV_FOURCC(*'MJPG')
+
+        (h, w) =  frame.shape[:2]
+        writer = cv2.VideoWriter('output.avi', fourcc, fps, (w, h), True)
+
         #cv2.cv.SetCaptureProperty(camera, cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp);
         #camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
         '''
@@ -94,6 +101,8 @@ class Tracker:
                 time = camera.get(cv2.cv.CV_CAP_PROP_POS_MSEC)/1000
                 self.timestamps.append(time)
 
+            writer.write(frame)
+
                 #if time > 5:
                     #return self.timestamps
 
@@ -115,6 +124,7 @@ class Tracker:
                 break
 
         camera.release()
+        writer.release()
         cv2.destroyAllWindows()
 
     def draw_text(self, frame):
