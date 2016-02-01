@@ -101,15 +101,19 @@ def process_predict():
     if request.headers['Content-Type'] == 'application/json':
         predict_attr = request.get_json()
 
-        if predict_attr.get('youtube_url') and predict_attr.get('user_email'):
+        if predict_attr.get('youtube_url') and predict_attr.get('user_email') and \
+                predict_attr.get('TL') and predict_attr.get('TR') and predict_attr.get('BR') and \
+                predict_attr.get('BL') and predict_attr.get('time'):
             youtube_url = predict_attr['youtube_url']
             print youtube_url
             user_email = predict_attr['user_email']
             print user_email
+            coordinates_roi = {'TL': predict_attr.get('TL'), 'TR': predict_attr.get('TR'), 'BL': predict_attr.get('BL'), 'BR': predict_attr.get('BR') }
+            time_roi = predict_attr.get('time')
 
             # TODO: Obtain the coordinates of the mask through OpenCV
             # TODO: PLUG IN CV ENGINE CODE HERE
-            process_motion_tracking_request.delay(youtube_url, user_email)
+            process_motion_tracking_request.delay(youtube_url, user_email, coordinates_roi, time_roi)
             return "Generating predictions for the following URL: " + youtube_url
 
     data = {
@@ -153,8 +157,12 @@ def not_found(error=None):
 ### HELPER FUNCTIONS ###
 
 @celery.task
-def process_motion_tracking_request(youtube_url, email):
+def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_roi):
     print "Processing motion tracking request"
+
+    print coordinates_roi
+    print "time = " + time_roi
+
     global video_id
     video_extractor = VideoExtractor(video_id)
     my_id = str(video_id)

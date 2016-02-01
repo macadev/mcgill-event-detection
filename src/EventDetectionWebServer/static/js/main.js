@@ -3,6 +3,7 @@ var playing;
 var initialX, initialY;
 var iX, iY, pX, pY;
 var time, url, email;
+var data;
 
 function offset(type){
     var offset = $("#my-video").offset();
@@ -23,7 +24,8 @@ function updateURL(){
 
 function submit(){
     email = $("#email").val();
-    sendData();
+    url = $("#url").val();
+    sendData(email, url, time);
 }
 
 function ROI(e) {
@@ -108,22 +110,28 @@ function printData(){
     $("#bottomLeft").html("BL: " + iX + ", " + pY);
 }
 
-function sendData(){
-    // var data = {'URL' : url, 'TL' : iX + ", " + iY, 'TR' : pX + ", " + iY, 'BR' : pX + ", " + pY, 'BL' : iX + ", " + pY, 'Time' : iX + ", " + iY, 'Email' : email};
+function sendData(email, url, time){
+    var data2 = {'URL' : url, 'TL' : iX + ", " + iY, 'TR' : pX + ", " + iY, 'BR' : pX + ", " + pY, 'BL' : iX + ", " + pY, 'Time' : iX + ", " + iY, 'Email' : email};
     // hard coding for now
+    var valTL = iX + ", " + iY;
+    var valTR = pX + ", " + iY;
+    var valBR = pX + ", " + pY;
+    var valBL = iX + ", " + pY;
+
+    data = '{"user_email":"' + email + '", "youtube_url":"' + url + '", "TL":"' + valTL + '", "TR":"' + valTR + '", "BR":"' + valBR + '", "BL":"' + valBL + '", "time":"' + time + '"}';
     console.log("sending data!");
-    var data = '{"user_email":"danielmacario5@gmail.com", "youtube_url":"https://www.youtube.com/watch?v=UiyDmqO59QE"}';
-    // $.post("http://ec2-54-200-65-191.us-west-2.compute.amazonaws.com/predict", data);
+    console.log(data);
+
     $.ajax({
         url: '/predict',
         type: 'POST',
         dataType: 'json',
-	contentType: "application/json",
+        contentType: "application/json",
         success: function (data) {
             console.log(data);
         },
-	headers: {'Content-Type':'application/json'},
+        headers: {'Content-Type':'application/json'},
         processData: false,
-	data: data
+        data: data
     }); 
 }
