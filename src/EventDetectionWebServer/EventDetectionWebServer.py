@@ -154,6 +154,7 @@ def not_found(error=None):
 
 @celery.task
 def process_motion_tracking_request(youtube_url, email):
+    print "Processing motion tracking request"
     global video_id
     video_extractor = VideoExtractor(video_id)
     my_id = str(video_id)
