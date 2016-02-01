@@ -1,4 +1,4 @@
-from flask import Flask, request, json, Response
+from flask import Flask, request, json, Response, render_template
 import sys
 
 sys.path.append('/home/ubuntu/projects/Event_Detection')
@@ -73,6 +73,7 @@ Useful for testing:
 curl -X POST http://127.0.0.1:5000
 curl -H "Content-type: application/json" -X POST http://ec2-54-200-65-191.us-west-2.compute.amazonaws.com/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=uNTpPNo3LBg"}'
 curl -H "Content-type: application/json" -X POST http://0.0.0.0:6060/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=uNTpPNo3LBg", "user_email":"danielmacario5@gmail.com"}'
+curl -H "Content-type: application/json" -X POST http://127.0.0.1:5000/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=DLtvrv4isLA", "user_email":"danielmacario5@gmail.com"}'
 '''
 
 ### SHARED VARIABLES ###
@@ -86,10 +87,8 @@ video_id = 0
 @app.route('/')
 def api_hello():
     app.logger.info("api_hello request being processed")
-    if 'name' in request.args:
-        return 'Hello ' + request.args['name']
-    else:
-        return "Hello Anonymous, the server is up."
+    return render_template('index.html', page='index')
+
 
 '''
 Client has to send a POST request with a JSON object that follows the
@@ -167,13 +166,12 @@ def process_motion_tracking_request(youtube_url, email):
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
     msg.body = text
-    video_attachment_path = 'output' + my_id + '.avi'
+    video_attachment_path = '../computer_vision_engine/pallete/motion_tracker/output' + my_id + '.avi'
     with app.open_resource(video_attachment_path) as fp:
         msg.attach(video_attachment_path, 'video/avi', fp.read())
     with app.app_context():
         mail.send(msg)
     os.remove(video_path)
-    os.remove(video_attachment_path)
 
 @celery.task
 def test_download_video(youtube_url):

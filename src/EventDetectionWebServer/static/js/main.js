@@ -112,15 +112,18 @@ function sendData(){
     // var data = {'URL' : url, 'TL' : iX + ", " + iY, 'TR' : pX + ", " + iY, 'BR' : pX + ", " + pY, 'BL' : iX + ", " + pY, 'Time' : iX + ", " + iY, 'Email' : email};
     // hard coding for now
     console.log("sending data!");
-    var data = {email:"danielmacario5@gmail.com", youtube_url:"https://www.youtube.com/watch?v=UiyDmqO59QE"};
+    var data = '{"user_email":"danielmacario5@gmail.com", "youtube_url":"https://www.youtube.com/watch?v=UiyDmqO59QE"}';
     // $.post("http://ec2-54-200-65-191.us-west-2.compute.amazonaws.com/predict", data);
     $.ajax({
-        url: 'http://ec2-54-200-65-191.us-west-2.compute.amazonaws.com/predict',
-        type: 'post',
+        url: '/predict',
+        type: 'POST',
         dataType: 'json',
+	contentType: "application/json",
         success: function (data) {
             console.log(data);
         },
-        data: data
+	headers: {'Content-Type':'application/json'},
+        processData: false,
+	data: data
     }); 
 }
