@@ -43,7 +43,7 @@ class Tracker:
         cv2.fillPoly(mask, [roi], (255, 255, 255))
         return mask
 
-    def track_object(self, roi_hist, roi, timestamp):
+    def track_object(self, roi_hist, roi, timestamp, output_video_id):
 
         camera = cv2.VideoCapture(self.camera)
         fps = camera.get(cv2.cv.CV_CAP_PROP_FPS)
@@ -53,7 +53,7 @@ class Tracker:
         fourcc = cv2.cv.CV_FOURCC(*'MJPG')
 
         (h, w) =  frame.shape[:2]
-        writer = cv2.VideoWriter('output.avi', fourcc, fps, (w, h), True)
+        writer = cv2.VideoWriter('output' + output_video_id  + '.avi', fourcc, fps, (w, h), True)
 
         #cv2.cv.SetCaptureProperty(camera, cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp);
         #camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
@@ -220,7 +220,7 @@ class Tracker:
         return center, x, y, radius
 
 
-def start(video, image):
+def start(video, image, output_video_id):
     bounding_box = cv2.imread(image, -1)
     bounding_box = cv2.cvtColor(bounding_box, cv2.COLOR_BGR2HSV)
     roi_hist = cv2.calcHist([bounding_box], [0], None, [16], [0, 180])
@@ -230,7 +230,7 @@ def start(video, image):
     #roi = np.array([[450, 200], [500, 200], [500, 300], [450, 300]])
     (w, h) = bounding_box.shape[:2]
 
-    return tracker.track_object(roi_hist, (0, 0, w, h), 1000)
+    return tracker.track_object(roi_hist, (0, 0, w, h), 1000, output_video_id)
 
 if __name__ == '__main__':
     car_src = "../../../resources/image_samples/tennis_man.png"
