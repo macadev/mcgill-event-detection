@@ -1,4 +1,4 @@
-from flask import Flask, request, json, Response
+from flask import Flask, request, json, Response, render_template
 import sys
 
 sys.path.append('/home/ubuntu/projects/Event_Detection')
@@ -87,10 +87,8 @@ video_id = 0
 @app.route('/')
 def api_hello():
     app.logger.info("api_hello request being processed")
-    if 'name' in request.args:
-        return 'Hello ' + request.args['name']
-    else:
-        return "Hello Anonymous, the server is up."
+    return render_template('index.html', page='index')
+
 
 '''
 Client has to send a POST request with a JSON object that follows the
