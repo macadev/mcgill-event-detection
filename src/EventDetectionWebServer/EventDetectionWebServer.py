@@ -1,5 +1,6 @@
 from flask import Flask, request, json, Response, render_template
 import sys
+import numpy as np
 
 sys.path.append('/home/ubuntu/projects/Event_Detection')
 sys.path.append('/home/ubuntu/projects/Event_Detection/src')
@@ -111,7 +112,7 @@ def process_predict():
 	        #coordinates_roi = map(int, coordinates_roi)
             coordinates_roi_list = [float(number) for number in predict_attr.get('points').split(',')]
             it = iter(coordinates_roi_list)
-            coordinates_roi = [list(elem) for elem in zip(it, it)]
+            coordinates_roi = np.array([list(elem) for elem in zip(it, it)])
             time_roi = float(predict_attr.get('time'))
 
             # TODO: Obtain the coordinates of the mask through OpenCV
@@ -179,7 +180,7 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
     msg.body = text
-    video_attachment_path = '../computer_vision_engine/pallete/motion_tracker/output' + my_id + '.avi'
+    video_attachment_path = 'output' + my_id + '.avi'
     with app.open_resource(video_attachment_path) as fp:
         msg.attach(video_attachment_path, 'video/avi', fp.read())
     with app.app_context():
@@ -212,4 +213,4 @@ if __name__ == '__main__':
     if port_num is not None:
         app.run(host='0.0.0.0', port=int(port_num))
     else:
-        app.run(debug=True)
+	app.run(debug=True)

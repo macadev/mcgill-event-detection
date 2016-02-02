@@ -40,7 +40,7 @@ class Tracker:
 
     def roi_to_mask(self, roi, frame):
         mask = np.zeros(frame.shape[:2], np.uint8)
-        cv2.fillPoly(mask, [roi], (255, 255, 255))
+        cv2.fillPoly(mask, np.int32([roi]), (255, 255, 255))
         return mask
 
     def track_object(self, coordinates_roi, timestamp, output_video_id):
@@ -85,6 +85,7 @@ class Tracker:
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             backProj = cv2.calcBackProject([hsv], [0], roi_hist, [0, 180], 1)
 
+	    roi = (0, 0, w, h)
             if(backProj.any()):
                 (r, roi) = cv2.CamShift(backProj, roi, termination)
                 pts = np.int0(cv2.cv.BoxPoints(r))
