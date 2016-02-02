@@ -43,34 +43,34 @@ class Tracker:
         cv2.fillPoly(mask, [roi], (255, 255, 255))
         return mask
 
-    def track_object(self, roi_hist, roi, timestamp, output_video_id):
+    def track_object(self, coordinates_roi, timestamp, output_video_id):
 
         camera = cv2.VideoCapture(self.camera)
         fps = camera.get(cv2.cv.CV_CAP_PROP_FPS)
 
         (grabbed, frame) = camera.read()
 
+        # initialize video writer
         fourcc = cv2.cv.CV_FOURCC(*'MJPG')
 
         (h, w) =  frame.shape[:2]
         writer = cv2.VideoWriter('output' + output_video_id  + '.avi', fourcc, fps, (w, h), True)
 
-        #cv2.cv.SetCaptureProperty(camera, cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp);
-        #camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
-        '''
+        # process ROI
+        camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
         (grabbed, frame) = camera.read()
-        roi_mask = self.roi_to_mask(roi, frame)
-        #roi_hist = self.feature_extractor.get_histogram(frame, roi_mask)
-
+        roi_mask = self.roi_to_mask(coordinates_roi, frame)
+        roi_hist = self.feature_extractor.get_histogram(frame, roi_mask)
+        '''
         #roi_hist = cv2.calcHist([self.feature_extractor.convert_to_HSV(frame)],[0],roi_mask,[256],[0,256])
         roi_box = frame[600:700, 300:400]
         roi_hist = cv2.calcHist([roi_box], [0], None, [16], [0, 180])
         roi_hist = cv2.normalize(roi_hist, roi_hist, 0, 255, cv2.NORM_MINMAX)
 
 
-        #cv2.cv.SetCaptureProperty(camera, cv2.cv.CV_CAP_PROP_POS_MSEC, 0);
+        #cv2.cv.SetCaptureProperty(camera, cv2.cv.CV_CAP_PROP_POS_MSEC, 0);'''
         camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, 0)
-        '''
+
         termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 
         while 1:
@@ -220,17 +220,19 @@ class Tracker:
         return center, x, y, radius
 
 
-def start(video, image, output_video_id):
+def start(video_path, coordinates_roi, time_roi, output_video_id):
+    '''
     bounding_box = cv2.imread(image, -1)
     bounding_box = cv2.cvtColor(bounding_box, cv2.COLOR_BGR2HSV)
     roi_hist = cv2.calcHist([bounding_box], [0], None, [16], [0, 180])
     roi_hist = cv2.normalize(roi_hist, roi_hist, 0, 255, cv2.NORM_MINMAX)
-
-    tracker = Tracker(camera = video)
+    '''
+    tracker = Tracker(camera = video_path)
     #roi = np.array([[450, 200], [500, 200], [500, 300], [450, 300]])
-    (w, h) = bounding_box.shape[:2]
+    #(w, h) = bounding_box.shape[:2]
 
-    return tracker.track_object(roi_hist, (0, 0, w, h), 1000, output_video_id)
+    #return tracker.track_object(roi_hist, (0, 0, w, h), 1000, output_video_id)
+    return tracker.track_object(coordinates_roi, time_roi, output_video_id)
 
 if __name__ == '__main__':
     car_src = "../../../resources/image_samples/tennis_man.png"
