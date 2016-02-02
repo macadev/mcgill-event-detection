@@ -108,10 +108,9 @@ def process_predict():
             print user_email
             #coordinates_roi = {'TL': predict_attr.get('TL'), 'TR': predict_attr.get('TR'), 'BL': predict_attr.get('BL'), 'BR': predict_attr.get('BR') }
             #coordinates_roi = [predict_attr.get('TL'), predict_attr.get('TR'), predict_attr.get('BL'), predict_attr.get('BR')]
-	    #coordinates_roi = map(int, coordinates_roi) 
-            coordinates_roi = predict_attr.get('points')
-	    coordinates_roi = [float(number) for number in coordinates_roi.split(',')]
-	    time_roi = predict_attr.get('time')
+	        #coordinates_roi = map(int, coordinates_roi)
+            coordinates_roi = [float(number) for number in predict_attr.get('points').split(',')]
+            time_roi = float(predict_attr.get('time'))
 
             # TODO: Obtain the coordinates of the mask through OpenCV
             # TODO: PLUG IN CV ENGINE CODE HERE
@@ -163,7 +162,7 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     print "Processing motion tracking request"
 
     print coordinates_roi
-    print "time = " + time_roi
+    print "time = " + str(time_roi)
 
     global video_id
     video_extractor = VideoExtractor(video_id)
