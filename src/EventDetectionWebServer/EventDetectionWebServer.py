@@ -180,9 +180,9 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
     msg.body = text
-    video_attachment_path = 'output' + my_id + '.avi'
+    video_attachment_path = 'output' + my_id + '.mp4'
     with app.open_resource(video_attachment_path) as fp:
-        msg.attach(video_attachment_path, 'video/avi', fp.read())
+        msg.attach(video_attachment_path, 'video/mp4', fp.read())
     with app.app_context():
         mail.send(msg)
     os.remove(video_path)
@@ -213,4 +213,4 @@ if __name__ == '__main__':
     if port_num is not None:
         app.run(host='0.0.0.0', port=int(port_num))
     else:
-	app.run(debug=True)
+        app.run(debug=True)

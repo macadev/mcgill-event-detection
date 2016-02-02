@@ -51,10 +51,10 @@ class Tracker:
         (grabbed, frame) = camera.read()
 
         # initialize video writer
-        fourcc = cv2.cv.CV_FOURCC(*'MJPG')
+        fourcc = cv2.cv.CV_FOURCC(*'H264')
 
         (h, w) =  frame.shape[:2]
-        writer = cv2.VideoWriter('output' + output_video_id  + '.avi', fourcc, fps, (w, h), True)
+        writer = cv2.VideoWriter('output' + output_video_id  + '.mp4', fourcc, fps, (w, h), True)
 
         # process ROI
         camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
@@ -85,7 +85,7 @@ class Tracker:
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             backProj = cv2.calcBackProject([hsv], [0], roi_hist, [0, 180], 1)
 
-	    roi = (0, 0, w, h)
+            roi = (0, 0, w, h)
             if(backProj.any()):
                 (r, roi) = cv2.CamShift(backProj, roi, termination)
                 pts = np.int0(cv2.cv.BoxPoints(r))
