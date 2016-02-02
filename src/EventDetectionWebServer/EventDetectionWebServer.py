@@ -108,7 +108,8 @@ def process_predict():
             print youtube_url
             user_email = predict_attr['user_email']
             print user_email
-            coordinates_roi = {'TL': predict_attr.get('TL'), 'TR': predict_attr.get('TR'), 'BL': predict_attr.get('BL'), 'BR': predict_attr.get('BR') }
+            #coordinates_roi = {'TL': predict_attr.get('TL'), 'TR': predict_attr.get('TR'), 'BL': predict_attr.get('BL'), 'BR': predict_attr.get('BR') }
+            coordinates_roi = {predict_attr.get('TL'), predict_attr.get('TR'), predict_attr.get('BL'), predict_attr.get('BR')}
             time_roi = predict_attr.get('time')
 
             # TODO: Obtain the coordinates of the mask through OpenCV
@@ -170,7 +171,8 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     video_extractor.download_video(youtube_url)
     bounding_box_path = '../../resources/image_samples/tennis_man.png'
     video_path = 'dled_video' + my_id + '.mp4'
-    timestamps = start(video_path, bounding_box_path, my_id)
+    #timestamps = start(video_path, bounding_box_path, my_id)
+    timestamps = start(video_path, coordinates_roi, time_roi, my_id)
     timestamps_email = ', '.join(map(str, timestamps))
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
