@@ -51,10 +51,10 @@ class Tracker:
         (grabbed, frame) = camera.read()
 
         # initialize video writer
-        fourcc = cv2.cv.CV_FOURCC(*'H264')
+        fourcc = cv2.cv.CV_FOURCC(*'MJPG')
 
         (h, w) =  frame.shape[:2]
-        writer = cv2.VideoWriter('output' + output_video_id  + '.mp4', fourcc, fps, (w, h), True)
+        writer = cv2.VideoWriter('output' + output_video_id  + '.avi', fourcc, fps, (w, h), True)
 
         # process ROI
         camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
