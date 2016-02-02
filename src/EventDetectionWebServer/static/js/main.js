@@ -117,11 +117,14 @@ function sendData(email, url, time){
     var valTR = pX + ", " + iY;
     var valBR = pX + ", " + pY;
     var valBL = iX + ", " + pY;
+    var points = [iX, iY, pX, iY, pX, pY, iX, pY];
+    points = points.toString();
 
-    data = '{"user_email":"' + email + '", "youtube_url":"' + url + '", "TL":"' + valTL + '", "TR":"' + valTR + '", "BR":"' + valBR + '", "BL":"' + valBL + '", "time":"' + time + '"}';
+    // data = '{"user_email":"' + email + '", "youtube_url":"' + url + '", "TL":"' + valTL + '", "TR":"' + valTR + '", "BR":"' + valBR + '", "BL":"' + valBL + '", "time":"' + time + '"}';
     console.log("sending data!");
-    console.log(data);
 
+    data = '{"user_email":"' + email + '", "youtube_url":"' + url + '", "points":"' + points + '","time":"' + time + '"}';
+    console.log(data);
     $.ajax({
         url: '/predict',
         type: 'POST',

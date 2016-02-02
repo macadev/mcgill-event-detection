@@ -17,6 +17,9 @@ class VideoExtractor():
         ydl_opts = {
             'outtmpl': 'dled_video' + str(self.video_id) + '.mp4',
             'progress_hooks': [my_hook],
+	    'merge_output_format': 'mp4'
+	    #'verbose': True,
+	    #'format': 'bestvideo+bestaudio/best'
         }
 
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:

@@ -221,6 +221,9 @@ class Tracker:
 
 
 def start(video_path, coordinates_roi, time_roi, output_video_id):
+    print "BLARFINGAR"
+    print video_path
+    print coordinates_roi
     '''
     bounding_box = cv2.imread(image, -1)
     bounding_box = cv2.cvtColor(bounding_box, cv2.COLOR_BGR2HSV)

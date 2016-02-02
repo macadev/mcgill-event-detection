@@ -101,16 +101,17 @@ def process_predict():
     if request.headers['Content-Type'] == 'application/json':
         predict_attr = request.get_json()
 
-        if predict_attr.get('youtube_url') and predict_attr.get('user_email') and \
-                predict_attr.get('TL') and predict_attr.get('TR') and predict_attr.get('BR') and \
-                predict_attr.get('BL') and predict_attr.get('time'):
+        if predict_attr.get('youtube_url') and predict_attr.get('user_email') and predict_attr.get('points') and predict_attr.get('time'):
             youtube_url = predict_attr['youtube_url']
             print youtube_url
             user_email = predict_attr['user_email']
             print user_email
             #coordinates_roi = {'TL': predict_attr.get('TL'), 'TR': predict_attr.get('TR'), 'BL': predict_attr.get('BL'), 'BR': predict_attr.get('BR') }
-            coordinates_roi = {predict_attr.get('TL'), predict_attr.get('TR'), predict_attr.get('BL'), predict_attr.get('BR')}
-            time_roi = predict_attr.get('time')
+            #coordinates_roi = [predict_attr.get('TL'), predict_attr.get('TR'), predict_attr.get('BL'), predict_attr.get('BR')]
+	    #coordinates_roi = map(int, coordinates_roi) 
+            coordinates_roi = predict_attr.get('points')
+	    coordinates_roi = [float(number) for number in coordinates_roi.split(',')]
+	    time_roi = predict_attr.get('time')
 
             # TODO: Obtain the coordinates of the mask through OpenCV
             # TODO: PLUG IN CV ENGINE CODE HERE
@@ -211,4 +212,3 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=int(port_num))
     else:
         app.run(debug=True)
-
