@@ -109,7 +109,9 @@ def process_predict():
             #coordinates_roi = {'TL': predict_attr.get('TL'), 'TR': predict_attr.get('TR'), 'BL': predict_attr.get('BL'), 'BR': predict_attr.get('BR') }
             #coordinates_roi = [predict_attr.get('TL'), predict_attr.get('TR'), predict_attr.get('BL'), predict_attr.get('BR')]
 	        #coordinates_roi = map(int, coordinates_roi)
-            coordinates_roi = [float(number) for number in predict_attr.get('points').split(',')]
+            coordinates_roi_list = [float(number) for number in predict_attr.get('points').split(',')]
+            it = iter(coordinates_roi_list)
+            coordinates_roi = zip(it, it)
             time_roi = float(predict_attr.get('time'))
 
             # TODO: Obtain the coordinates of the mask through OpenCV
