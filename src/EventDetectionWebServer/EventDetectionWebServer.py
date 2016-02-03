@@ -176,7 +176,7 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     video_path = 'dled_video' + my_id + '.mp4'
     #timestamps = start(video_path, bounding_box_path, my_id)
     timestamps = start(video_path, coordinates_roi, time_roi, my_id)
-    subprocess.call(['avconv', '-i', 'output' + my_id + '.avi','-c:v', 'libx264', '-c:a', 'copy', 'output' + my_id +'.mp4'])
+    subprocess.call(['avconv', '-i', 'output' + my_id + '.avi','-c:v', 'libx264', '-s', '640x360', '-c:a', 'copy', 'output' + my_id +'.mp4'])
     timestamps_email = ', '.join(map(str, timestamps))
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
