@@ -177,7 +177,6 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     #timestamps = start(video_path, bounding_box_path, my_id)
     timestamps = start(video_path, coordinates_roi, time_roi, my_id)
     subprocess.call(['avconv', '-i', 'output' + my_id + '.avi','-c:v', 'libx264', '-c:a', 'copy', 'output' + my_id +'.mp4'])
-    #os.system('avconv -i output' + my_id + '.avi' + '-c:v libx264 -c:a copy output' + my_id +'.mp4')
     timestamps_email = ', '.join(map(str, timestamps))
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
@@ -186,7 +185,7 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     with app.open_resource(video_attachment_path) as fp:
         msg.attach(video_attachment_path, 'video/mp4', fp.read())
     #with app.open_resource('output' + my_id + '.avi') as fp:
-	#msg.attach('output' + my_id + '.avi', 'video/mp4', fp.read())
+    #msg.attach('output' + my_id + '.avi', 'video/mp4', fp.read())
     with app.app_context():
         mail.send(msg)
     os.remove(video_path)

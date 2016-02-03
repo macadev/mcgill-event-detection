@@ -54,6 +54,10 @@ class Tracker:
         fourcc = cv2.cv.CV_FOURCC(*'MJPG')
 
         (h, w) =  frame.shape[:2]
+        print "height:"
+        print h
+        print "width:"
+        print w
         writer = cv2.VideoWriter('output' + output_video_id  + '.avi', fourcc, fps, (w, h), True)
 
         # process ROI
