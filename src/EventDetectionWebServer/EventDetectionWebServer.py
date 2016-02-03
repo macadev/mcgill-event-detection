@@ -185,6 +185,8 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     video_attachment_path = 'output' + my_id + '.mp4'
     with app.open_resource(video_attachment_path) as fp:
         msg.attach(video_attachment_path, 'video/mp4', fp.read())
+    #with app.open_resource('output' + my_id + '.avi') as fp:
+	#msg.attach('output' + my_id + '.avi', 'video/mp4', fp.read())
     with app.app_context():
         mail.send(msg)
     os.remove(video_path)
