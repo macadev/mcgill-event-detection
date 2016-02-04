@@ -179,6 +179,7 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
 
     # Convert the resulting AVI video to a lower quality MP4
     # Chrome supports attachment up to 25 MB.
+    print "Converting video to a lower quality MP4"
     subprocess.call(['avconv', '-i', 'output' + my_id + '.avi','-c:v', 'libx264', '-s', '640x360', '-c:a', 'copy', 'output' + my_id +'.mp4'])
     video_attachment_path = 'output' + my_id + '.mp4'
 
