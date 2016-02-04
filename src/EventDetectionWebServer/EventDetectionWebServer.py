@@ -11,11 +11,10 @@ from videoextractor import VideoExtractor
 from computer_vision_engine.pallete.motion_tracker.HSV_tracker import start
 from celery import Celery
 from flask.ext.mail import Mail, Message
-import logging
 import os
 import subprocess
-# Initialize Web Server along with Celery
 
+# Initialize Web Server along with Celery
 app = Flask(__name__)
 
 redis_url = os.environ.get('REDIS_URL')
@@ -35,10 +34,6 @@ app.config.update(
     MAIL_USE_TLS = False,
     MAIL_USE_SSL = True
 )
-
-#file_handler = logging.FileHandler('app.log')
-#app.logger.addHandler(file_handler)
-#app.logger.setLevel(logging.INFO)
 
 # Initialize Flask-Mail
 mail = Mail(app)
@@ -107,9 +102,6 @@ def process_predict():
             print youtube_url
             user_email = predict_attr['user_email']
             print user_email
-            #coordinates_roi = {'TL': predict_attr.get('TL'), 'TR': predict_attr.get('TR'), 'BL': predict_attr.get('BL'), 'BR': predict_attr.get('BR') }
-            #coordinates_roi = [predict_attr.get('TL'), predict_attr.get('TR'), predict_attr.get('BL'), predict_attr.get('BR')]
-	        #coordinates_roi = map(int, coordinates_roi)
             coordinates_roi_list = [float(number) for number in predict_attr.get('points').split(',')]
             it = iter(coordinates_roi_list)
             coordinates_roi = np.array([list(elem) for elem in zip(it, it)])
@@ -158,47 +150,57 @@ def not_found(error=None):
     resp = json.dumps(message)
     return resp
 
-### HELPER FUNCTIONS ###
+### CELERY TASKS ###
 
 @celery.task
 def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_roi):
+    global video_id
     print "Processing motion tracking request"
 
+    print "ROI Coordinates"
     print coordinates_roi
-    print "time = " + str(time_roi)
+    print "Time = " + str(time_roi)
+    print "Destination Email = " + email
 
-    global video_id
     video_extractor = VideoExtractor(video_id)
+
+    # The name of the downloaded video will be dled_video + my_id
+    # This variable is used for uniqueness, it will allow multiple requests
+    # to be processed in parallel
     my_id = str(video_id)
     video_id = video_id + 1
     video_extractor.download_video(youtube_url)
-    bounding_box_path = '../../resources/image_samples/tennis_man.png'
     video_path = 'dled_video' + my_id + '.mp4'
-    #timestamps = start(video_path, bounding_box_path, my_id)
+
+    # Begin the CV engine processing
+    print "Submitting video to the CV Engine"
     timestamps = start(video_path, coordinates_roi, time_roi, my_id)
+    video_with_roi_path = 'output' + my_id + '.avi'
+
+    # Convert the resulting AVI video to a lower quality MP4
+    # Chrome supports attachment up to 25 MB.
     subprocess.call(['avconv', '-i', 'output' + my_id + '.avi','-c:v', 'libx264', '-s', '640x360', '-c:a', 'copy', 'output' + my_id +'.mp4'])
+    video_attachment_path = 'output' + my_id + '.mp4'
+
+    # Send email to the user
     timestamps_email = ', '.join(map(str, timestamps))
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
     msg.body = text
-    video_attachment_path = 'output' + my_id + '.mp4'
     with app.open_resource(video_attachment_path) as fp:
         msg.attach(video_attachment_path, 'video/mp4', fp.read())
-    #with app.open_resource('output' + my_id + '.avi') as fp:
-    #msg.attach('output' + my_id + '.avi', 'video/mp4', fp.read())
     with app.app_context():
         mail.send(msg)
+
+    # Remove all the video files
     os.remove(video_path)
+    os.remove(video_attachment_path)
+    os.remove(video_with_roi_path)
 
 @celery.task
 def test_download_video(youtube_url):
     videoextractor = VideoExtractor()
     videoextractor.download_video(youtube_url)
-
-@celery.task
-def add_together(a, b):
-    print "Running add_together"
-    return a + b
 
 @celery.task
 def send_email(email, youtube_url,results):
