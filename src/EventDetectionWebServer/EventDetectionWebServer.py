@@ -105,7 +105,8 @@ def process_predict():
             coordinates_roi_list = [float(number) for number in predict_attr.get('points').split(',')]
             it = iter(coordinates_roi_list)
             coordinates_roi = np.array([list(elem) for elem in zip(it, it)])
-            time_roi = float(predict_attr.get('time'))
+            # The timestamp must be stored in milliseconds
+            time_roi = float(predict_attr.get('time')) * 1000.0
 
             # TODO: Obtain the coordinates of the mask through OpenCV
             # TODO: PLUG IN CV ENGINE CODE HERE

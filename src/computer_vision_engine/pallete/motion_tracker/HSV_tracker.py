@@ -64,6 +64,8 @@ class Tracker:
         camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
         (grabbed, frame) = camera.read()
         roi_mask = self.roi_to_mask(coordinates_roi, frame)
+        print "dir(roi_mask)"
+        dir(roi_mask)
         roi_hist = self.feature_extractor.get_histogram(frame, roi_mask)
         '''
         #roi_hist = cv2.calcHist([self.feature_extractor.convert_to_HSV(frame)],[0],roi_mask,[256],[0,256])
