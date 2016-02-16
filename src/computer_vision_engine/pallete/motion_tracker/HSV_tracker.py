@@ -63,11 +63,11 @@ class Tracker:
         # process ROI
         camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
         (grabbed, frame) = camera.read()
+        '''
         roi_mask = self.roi_to_mask(coordinates_roi, frame)
         print "dir(roi_mask)"
         dir(roi_mask)
         roi_hist = self.feature_extractor.get_histogram(frame, roi_mask)
-        '''
         #roi_hist = cv2.calcHist([self.feature_extractor.convert_to_HSV(frame)],[0],roi_mask,[256],[0,256])
         roi_box = frame[600:700, 300:400]
         roi_hist = cv2.calcHist([roi_box], [0], None, [16], [0, 180])
@@ -75,6 +75,22 @@ class Tracker:
 
 
         #cv2.cv.SetCaptureProperty(camera, cv2.cv.CV_CAP_PROP_POS_MSEC, 0);'''
+
+        # set up the ROI for tracking
+        #roi = frame[682:771, 306:522]
+        roi = frame[306:522, 700:791]
+        #r = np.array([[682, 306], [771, 306], [771, 522], [682, 522]])
+        #r = np.int32([r])
+        #theframe = cv2.fillPoly(frame, r, (255, 255, 255))
+        cv2.imwrite("THEFRAME.png", roi)
+
+        hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        print(hsv_roi.shape[:2])
+        mask = cv2.inRange(hsv_roi, np.array((0., 60.,32.)), np.array((180.,255.,255.)))
+        roi_hist = cv2.calcHist([hsv_roi],[0],mask,[180],[0,180])
+        #cv2.normalize(roi_hist,roi_hist,0,255,cv2.NORM_MINMAX)
+        roi_hist = cv2.normalize(roi_hist).flatten()
+
         camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, 0)
 
         termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
