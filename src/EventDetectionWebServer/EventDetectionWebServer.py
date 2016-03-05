@@ -94,7 +94,7 @@ following structure:
 { 'youtube_url' : 'http://...' }
 '''
 @app.route('/predict', methods = ['POST'])
-@cross_origin()
+@cross_origin() # Allows servers under different domains to access this endpoint
 def process_predict():
     app.logger.info("predict request being processed")
     if request.headers['Content-Type'] == 'application/json':
@@ -117,7 +117,7 @@ def process_predict():
             return "Generating predictions for the following URL: " + youtube_url
 
     data = {
-        'error_message' : 'The submitted data is not JSON'
+        'error_message' : 'The submitted data is not JSON, or the request is incomplete.'
     }
     js = json.dumps(data)
 
@@ -197,7 +197,6 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
 
     with app.open_resource('THEFRAME.png') as fp:
         msg.attach('THEFRAME.png', 'image/png', fp.read())
-
 
     with app.app_context():
         mail.send(msg)
