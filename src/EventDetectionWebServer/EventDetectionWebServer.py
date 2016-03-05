@@ -11,6 +11,8 @@ from videoextractor import VideoExtractor
 from computer_vision_engine.pallete.motion_tracker.HSV_tracker import start
 from celery import Celery
 from flask.ext.mail import Mail, Message
+from flask.ext.cors import CORS, cross_origin
+
 import os
 import subprocess
 
@@ -92,6 +94,7 @@ following structure:
 { 'youtube_url' : 'http://...' }
 '''
 @app.route('/predict', methods = ['POST'])
+@cross_origin()
 def process_predict():
     app.logger.info("predict request being processed")
     if request.headers['Content-Type'] == 'application/json':
