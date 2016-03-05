@@ -1,6 +1,9 @@
 from flask import Flask, request, json, Response, render_template
 import sys
 import numpy as np
+import os
+import subprocess
+import uuid
 
 sys.path.append('/home/ubuntu/projects/Event_Detection')
 sys.path.append('/home/ubuntu/projects/Event_Detection/src')
@@ -12,9 +15,6 @@ from computer_vision_engine.pallete.motion_tracker.HSV_tracker import start
 from celery import Celery
 from flask.ext.mail import Mail, Message
 from flask.ext.cors import CORS, cross_origin
-
-import os
-import subprocess
 
 # Initialize Web Server along with Celery
 app = Flask(__name__)
@@ -73,12 +73,6 @@ curl -H "Content-type: application/json" -X POST http://ec2-54-200-65-191.us-wes
 curl -H "Content-type: application/json" -X POST http://0.0.0.0:6060/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=uNTpPNo3LBg", "user_email":"danielmacario5@gmail.com"}'
 curl -H "Content-type: application/json" -X POST http://127.0.0.1:5000/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=DLtvrv4isLA", "user_email":"danielmacario5@gmail.com"}'
 '''
-
-### SHARED VARIABLES ###
-
-
-''' variable used to give unique ID's to the downloaded videos '''
-video_id = 0
 
 ### ROUTES ###
 
@@ -158,7 +152,7 @@ def not_found(error=None):
 
 @celery.task
 def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_roi):
-    global video_id
+    video_id = str(uuid.uuid4())
     print "Processing motion tracking request"
 
     print "ROI Coordinates"
@@ -172,7 +166,6 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     # This variable is used for uniqueness, it will allow multiple requests
     # to be processed in parallel
     my_id = str(video_id)
-    video_id = video_id + 1
     video_extractor.download_video(youtube_url)
     video_path = 'dled_video' + my_id + '.mp4'
 
@@ -211,17 +204,6 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
 def test_download_video(youtube_url):
     videoextractor = VideoExtractor()
     videoextractor.download_video(youtube_url)
-
-@celery.task
-def send_email(email, youtube_url,results):
-    timestamps_email = ', '.join(map(str, results))
-    print "In send_mail() function"
-    print timestamps_email
-    text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtain by the CV engine!" + timestamps_email
-    msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
-    msg.body = text
-    with app.app_context():
-        mail.send(msg)
 
 if __name__ == '__main__':
     port_num = os.environ.get('PORT')
