@@ -162,23 +162,22 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
 
     video_extractor = VideoExtractor(video_id)
 
-    # The name of the downloaded video will be dled_video + my_id
+    # The name of the downloaded video will be dled_video + video_id
     # This variable is used for uniqueness, it will allow multiple requests
     # to be processed in parallel
-    my_id = str(video_id)
     video_extractor.download_video(youtube_url)
-    video_path = 'dled_video' + my_id + '.mp4'
+    video_path = 'dled_video' + video_id + '.mp4'
 
     # Begin the CV engine processing
     print "Submitting video to the CV Engine"
-    timestamps = start(video_path, coordinates_roi, time_roi, my_id)
-    video_with_roi_path = 'output' + my_id + '.avi'
+    timestamps = start(video_path, coordinates_roi, time_roi, video_id)
+    video_with_roi_path = 'output' + video_id + '.avi'
 
     # Convert the resulting AVI video to a lower quality MP4
     # Chrome supports attachment up to 25 MB.
     print "Converting video to a lower quality MP4"
-    subprocess.call(['avconv', '-i', 'output' + my_id + '.avi','-c:v', 'libx264', '-s', '640x360', '-c:a', 'copy', 'output' + my_id +'.mp4'])
-    video_attachment_path = 'output' + my_id + '.mp4'
+    subprocess.call(['avconv', '-i', 'output' + video_id + '.avi','-c:v', 'libx264', '-s', '640x360', '-c:a', 'copy', 'output' + video_id +'.mp4'])
+    video_attachment_path = 'output' + video_id + '.mp4'
 
     # Send email to the user
     timestamps_email = ', '.join(map(str, timestamps))
@@ -188,15 +187,16 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     with app.open_resource(video_attachment_path) as fp:
         msg.attach(video_attachment_path, 'video/mp4', fp.read())
 
-    with app.open_resource('THEFRAME.png') as fp:
-        msg.attach('THEFRAME.png', 'image/png', fp.read())
+    roi_image_filename = 'roi_image' + video_id + '.png'
+    with app.open_resource(roi_image_filename) as fp:
+        msg.attach(roi_image_filename, 'image/png', fp.read())
 
     with app.app_context():
         mail.send(msg)
 
     # Remove all the video files
     os.remove(video_path)
-    os.remove('THEFRAME.png')
+    os.remove(roi_image_filename)
     os.remove(video_attachment_path)
     os.remove(video_with_roi_path)
 

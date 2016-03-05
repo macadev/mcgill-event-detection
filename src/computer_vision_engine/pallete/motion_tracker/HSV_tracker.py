@@ -44,10 +44,10 @@ class Tracker:
         return mask
 
     def track_object(self, coordinates_roi, timestamp, output_video_id):
-
+	roi_image_filename = 'roi_image' + output_video_id + '.png'
         camera = cv2.VideoCapture(self.camera)
         fps = camera.get(cv2.cv.CV_CAP_PROP_FPS)
-
+	
         (grabbed, frame) = camera.read()
 
         # initialize video writer
@@ -82,7 +82,7 @@ class Tracker:
         #r = np.array([[682, 306], [771, 306], [771, 522], [682, 522]])
         #r = np.int32([r])
         #theframe = cv2.fillPoly(frame, r, (255, 255, 255))
-        cv2.imwrite("THEFRAME.png", roi)
+        cv2.imwrite(roi_image_filename, roi)
 
         hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
         print(hsv_roi.shape[:2])
@@ -244,7 +244,6 @@ class Tracker:
 
 
 def start(video_path, coordinates_roi, time_roi, output_video_id):
-    print "BLARFINGAR"
     print video_path
     print coordinates_roi
     '''
