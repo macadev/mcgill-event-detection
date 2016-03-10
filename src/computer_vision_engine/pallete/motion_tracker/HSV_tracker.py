@@ -54,16 +54,17 @@ class Tracker:
         fourcc = cv2.cv.CV_FOURCC(*'MJPG')
 
         (h, w) =  frame.shape[:2]
-        print "height:"
+        print "height of downloaded video:"
         print h
-        print "width:"
+        print "width of downloaded video:"
         print w
         writer = cv2.VideoWriter('output' + output_video_id  + '.avi', fourcc, fps, (w, h), True)
 
         # process ROI
         camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
         (grabbed, frame) = camera.read()
-        '''
+        
+	'''
         roi_mask = self.roi_to_mask(coordinates_roi, frame)
         print "dir(roi_mask)"
         dir(roi_mask)
@@ -78,20 +79,47 @@ class Tracker:
 
         # set up the ROI for tracking
         #roi = frame[682:771, 306:522]
-        roi = frame[306:522, 700:791]
-        #r = np.array([[682, 306], [771, 306], [771, 522], [682, 522]])
+        #roi = frame[306:522, 700:791]
+	
+	# cross multiply to translate ROI
+	client_x1 = coordinates_roi[0][0];
+	client_y1 = coordinates_roi[0][1];
+	client_x2 = coordinates_roi[2][0];
+	client_y2 = coordinates_roi[2][1];
+	
+	# Scale the coordiantes of the ROI to correspond with the downlaoded video
+	scaled_x1 = client_x1 / 640 * w;
+	scaled_y1 = client_y1 / 360 * h;
+	scaled_x2 = client_x2 / 640 * w;
+	scaled_y2 = client_y2 / 360 * h;
+		
+	print('scaled x1', scaled_x1)
+	print('scaled x2', scaled_x2)
+	print('scaled y1', scaled_y1)
+	print('scaled y2', scaled_y2)
+	
+	# First specify using y, then x
+	roi = frame[scaled_y1:scaled_y2,scaled_x1:scaled_x2]
+        
+	#r = np.array([[682, 306], [771, 306], [771, 522], [682, 522]])
         #r = np.int32([r])
         #theframe = cv2.fillPoly(frame, r, (255, 255, 255))
         cv2.imwrite(roi_image_filename, roi)
-
+	
+	# Find the HSV representation of the ROI
         hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        print(hsv_roi.shape[:2])
-        mask = cv2.inRange(hsv_roi, np.array((0., 60.,32.)), np.array((180.,255.,255.)))
-        roi_hist = cv2.calcHist([hsv_roi],[0],mask,[180],[0,180])
+        print('found the HSV rep of the ROI') 
+	
+        #mask = cv2.inRange(hsv_roi, np.array((0., 60.,32.)), np.array((180.,255.,255.)))
+        mask = cv2.inRange(hsv_roi, (0., 60., 32.), (180., 255., 255.))
+	
+	roi_hist = cv2.calcHist([hsv_roi],[0],mask,[180],[0,180])
         #cv2.normalize(roi_hist,roi_hist,0,255,cv2.NORM_MINMAX)
         roi_hist = cv2.normalize(roi_hist).flatten()
-
-        camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, 0)
+	print('found the roi_hist')
+        
+	# Roll back video to the beginning
+	camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, 0)
 
         termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 

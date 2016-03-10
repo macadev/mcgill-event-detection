@@ -101,6 +101,7 @@ def process_predict():
             print user_email
             coordinates_roi_list = [float(number) for number in predict_attr.get('points').split(',')]
             it = iter(coordinates_roi_list)
+	    # Coordinates array([[ TL.x, TL.y], [TR.x, Tr.y], [BR.x, BR.y], [BL.x, BL.y]])
             coordinates_roi = np.array([list(elem) for elem in zip(it, it)])
             # The timestamp must be stored in milliseconds
             time_roi = float(predict_attr.get('time')) * 1000.0
