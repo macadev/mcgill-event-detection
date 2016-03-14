@@ -5,6 +5,11 @@ var iX, iY, pX, pY;
 var time, url, email;
 var data;
 
+var requestType = {
+    motion_tracking : 'MotionTracking',
+    object_recognition: 'ObjectRecognition'
+};
+
 function offset(type){
     var offset = $("#my-video").offset();
 
@@ -22,10 +27,10 @@ function updateURL(){
     video.src(url);
 }
 
-function submit(){
+function submit(request_name){
     email = $("#email").val();
     url = $("#url").val();
-    sendData(email, url, time);
+    sendData(email, url, time, request_name);
 }
 
 function ROI(e) {
@@ -110,7 +115,7 @@ function printData(){
     $("#bottomLeft").html("BL: " + iX + ", " + pY);
 }
 
-function sendData(email, url, time){
+function sendData(email, url, time, request_name){
     var data2 = {'URL' : url, 'TL' : iX + ", " + iY, 'TR' : pX + ", " + iY, 'BR' : pX + ", " + pY, 'BL' : iX + ", " + pY, 'Time' : iX + ", " + iY, 'Email' : email};
     // hard coding for now
     var valTL = iX + ", " + iY;
@@ -120,13 +125,20 @@ function sendData(email, url, time){
     var points = [iX, iY, pX, iY, pX, pY, iX, pY];
     points = points.toString();
 
+    var serverEndpoint;
+    if (request_name == requestType.motion_tracking) {
+        serverEndpoint = "/predict";
+    } else if (request_name == requestType.object_recognition) {
+        serverEndpoint = "/submit-detection-request"
+    }
+
     // data = '{"user_email":"' + email + '", "youtube_url":"' + url + '", "TL":"' + valTL + '", "TR":"' + valTR + '", "BR":"' + valBR + '", "BL":"' + valBL + '", "time":"' + time + '"}';
     console.log("sending data!");
 
     data = '{"user_email":"' + email + '", "youtube_url":"' + url + '", "points":"' + points + '","time":"' + time + '"}';
     console.log(data);
     $.ajax({
-        url: '/predict',
+        url: serverEndpoint,
         type: 'POST',
         dataType: 'json',
         contentType: "application/json",

@@ -1,1 +1,1 @@
-g++ -std=c++11 $1.cpp `pkg-config opencv --cflags --libs`
+g++ -std=c++11 $1.cpp -o object_detector `pkg-config opencv --cflags --libs`

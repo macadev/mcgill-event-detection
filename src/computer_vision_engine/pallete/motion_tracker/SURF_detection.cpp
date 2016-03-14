@@ -76,6 +76,11 @@ int main(int argc, char **argv){
     Mat masked_image;
     roi.copyTo(masked_image, mask);
 
+    stringstream roi_image;
+    roi_image << "roi_image" << output_video_id << ".png";
+
+    imwrite(roi_image, roi);
+
     capture.set(CV_CAP_PROP_POS_MSEC, 0);
 
     // Compute features of the masked region
