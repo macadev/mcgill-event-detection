@@ -1,6 +1,9 @@
 from flask import Flask, request, json, Response, render_template
 import sys
 import numpy as np
+import os
+import subprocess
+import uuid
 
 sys.path.append('/home/ubuntu/projects/Event_Detection')
 sys.path.append('/home/ubuntu/projects/Event_Detection/src')
@@ -11,8 +14,7 @@ from videoextractor import VideoExtractor
 from computer_vision_engine.pallete.motion_tracker.HSV_tracker import start
 from celery import Celery
 from flask.ext.mail import Mail, Message
-import os
-import subprocess
+from flask.ext.cors import CORS, cross_origin
 
 # Initialize Web Server along with Celery
 app = Flask(__name__)
@@ -72,12 +74,6 @@ curl -H "Content-type: application/json" -X POST http://0.0.0.0:6060/predict -d 
 curl -H "Content-type: application/json" -X POST http://127.0.0.1:5000/predict -d '{"youtube_url":"https://www.youtube.com/watch?v=DLtvrv4isLA", "user_email":"danielmacario5@gmail.com"}'
 '''
 
-### SHARED VARIABLES ###
-
-
-''' variable used to give unique ID's to the downloaded videos '''
-video_id = 0
-
 ### ROUTES ###
 
 @app.route('/')
@@ -86,43 +82,7 @@ def api_hello():
     return render_template('index.html', page='index')
 
 
-'''
-Client has to send a POST request with a JSON object that follows the
-following structure:
-{ 'youtube_url' : 'http://...' }
-'''
-@app.route('/predict', methods = ['POST'])
-def process_predict():
-    app.logger.info("predict request being processed")
-    if request.headers['Content-Type'] == 'application/json':
-        predict_attr = request.get_json()
-
-        if predict_attr.get('youtube_url') and predict_attr.get('user_email') and predict_attr.get('points') and predict_attr.get('time'):
-            youtube_url = predict_attr['youtube_url']
-            print youtube_url
-            user_email = predict_attr['user_email']
-            print user_email
-            coordinates_roi_list = [float(number) for number in predict_attr.get('points').split(',')]
-            it = iter(coordinates_roi_list)
-            coordinates_roi = np.array([list(elem) for elem in zip(it, it)])
-            # The timestamp must be stored in milliseconds
-            time_roi = float(predict_attr.get('time')) * 1000.0
-
-            # TODO: Obtain the coordinates of the mask through OpenCV
-            # TODO: PLUG IN CV ENGINE CODE HERE
-            process_motion_tracking_request.delay(youtube_url, user_email, coordinates_roi, time_roi)
-            return "Generating predictions for the following URL: " + youtube_url
-
-    data = {
-        'error_message' : 'The submitted data is not JSON'
-    }
-    js = json.dumps(data)
-
-    resp = Response(js, status=400, mimetype='application/json')
-    app.logger.info("predict request failed")
-    return resp
-
-@app.route('/submit-event', methods = ['POST'])
+@app.route('/submit-event', methods = ['POST']) # TODO: update the name of this route
 def submit_labeled_event():
     app.logger.info("submit labeled event being processed")
     if request.headers['Content-Type'] == 'application/json':
@@ -142,6 +102,69 @@ def submit_labeled_event():
     app.logger.info("predict request failed")
     return resp
 
+
+'''
+Client has to send a POST request with a JSON object that follows the
+following structure:
+{ 'youtube_url' : 'http://...' }
+'''
+@app.route('/predict', methods = ['POST']) # TODO refactor the name of this route
+@cross_origin() # Allows servers under different domains to access this endpoint
+def process_predict():
+    app.logger.info("predict request being processed")
+    if request.headers['Content-Type'] == 'application/json':
+        tracking_attr = request.get_json()
+
+        if tracking_attr .get('youtube_url') and tracking_attr .get('user_email') and tracking_attr .get('points') and tracking_attr .get('time'):
+            youtube_url, user_email, coordinates_roi, time_roi = extract_request_data(tracking_attr )
+            process_motion_tracking_request.delay(youtube_url, user_email, coordinates_roi, time_roi)
+            return "Generating predictions for the following URL: " + youtube_url
+
+    data = {
+        'error_message' : 'The submitted data is not JSON, or the request is incomplete.'
+    }
+    js = json.dumps(data)
+
+    resp = Response(js, status=400, mimetype='application/json')
+    app.logger.info("predict request failed")
+    return resp
+
+
+@app.route('/submit-detection-request', methods = ['POST'])
+def process_predict():
+    app.logger.info("Object detection request being processed")
+    if request.headers['Content-Type'] == 'application/json':
+        detection_attr = request.get_json()
+
+        if detection_attr.get('youtube_url') and detection_attr.get('user_email') and detection_attr.get('points') and detection_attr.get('time'):
+            youtube_url, user_email, coordinates_roi, time_roi = extract_request_data(detection_attr)
+            process_motion_tracking_request.delay(youtube_url, user_email, coordinates_roi, time_roi)
+            return "Generating predictions for the following URL: " + youtube_url
+
+    data = {
+        'error_message' : 'The submitted data is not JSON, or the request is incomplete.'
+    }
+    js = json.dumps(data)
+
+    resp = Response(js, status=400, mimetype='application/json')
+    app.logger.info("predict request failed")
+    return resp
+
+
+def extract_request_data(request_attr):
+    youtube_url = request_attr['youtube_url']
+    print youtube_url
+    user_email = request_attr['user_email']
+    print user_email
+    coordinates_roi_list = [float(number) for number in request_attr.get('points').split(',')]
+    it = iter(coordinates_roi_list)
+    # Coordinates array([[ TL.x, TL.y], [TR.x, Tr.y], [BR.x, BR.y], [BL.x, BL.y]])
+    coordinates_roi = np.array([list(elem) for elem in zip(it, it)])
+    # The timestamp must be stored in milliseconds
+    time_roi = float(request_attr.get('time')) * 1000.0
+    return youtube_url, user_email, coordinates_roi, time_roi
+
+
 @app.errorhandler(404)
 def not_found(error=None):
     message = {
@@ -151,75 +174,110 @@ def not_found(error=None):
     resp = json.dumps(message)
     return resp
 
-### CELERY TASKS ###
 
-@celery.task
-def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_roi):
-    global video_id
+### FUNCTIONS CELERY TASKS RELY ON ###
+
+def convert_video_to_lower_quality(video_id):
+    # Convert the resulting AVI video to a lower quality MP4
+    # Chrome supports attachment up to 25 MB.
+    print "Converting video to a lower quality MP4"
+    subprocess.call(['avconv', '-i', 'output' + video_id + '.avi','-c:v', 'libx264', '-s', '640x360', '-c:a', 'copy', 'output' + video_id +'.mp4'])
+
+def send_results_via_email(video_attachment_path, roi_image_filename, destination_email, video_id, text):
+    msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[destination_email])
+    msg.body = text
+
+    with app.open_resource(video_attachment_path) as fp:
+        msg.attach(video_attachment_path, 'video/mp4', fp.read())
+
+    with app.open_resource(roi_image_filename) as fp:
+        msg.attach(roi_image_filename, 'image/png', fp.read())
+
+    with app.app_context():
+        mail.send(msg)
+
+def remove_attachment_files(video_path, roi_image_filename, video_attachment_path, video_with_roi_path):
+    # Remove all the video files
+    os.remove(video_path)
+    os.remove(roi_image_filename)
+    os.remove(video_attachment_path)
+    os.remove(video_with_roi_path)
+
+def log_request_information(coordinates_roi, time_roi, email):
     print "Processing motion tracking request"
-
     print "ROI Coordinates"
     print coordinates_roi
     print "Time = " + str(time_roi)
     print "Destination Email = " + email
 
+
+### CELERY TASKS ###
+
+
+@celery.task
+def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_roi):
+    video_id = str(uuid.uuid4())
+    video_with_roi_path = 'output' + video_id + '.avi'
+    video_attachment_path = 'output' + video_id + '.mp4'
+    roi_image_filename = 'roi_image' + video_id + '.png'
+
+    log_request_information(coordinates_roi, time_roi, email)
+
     video_extractor = VideoExtractor(video_id)
 
-    # The name of the downloaded video will be dled_video + my_id
+    # The name of the downloaded video will be dled_video + video_id
     # This variable is used for uniqueness, it will allow multiple requests
     # to be processed in parallel
-    my_id = str(video_id)
-    video_id = video_id + 1
     video_extractor.download_video(youtube_url)
-    video_path = 'dled_video' + my_id + '.mp4'
+    video_path = 'dled_video' + video_id + '.mp4'
 
     # Begin the CV engine processing
     print "Submitting video to the CV Engine"
-    timestamps = start(video_path, coordinates_roi, time_roi, my_id)
-    video_with_roi_path = 'output' + my_id + '.avi'
+    timestamps = start(video_path, coordinates_roi, time_roi, video_id)
 
-    # Convert the resulting AVI video to a lower quality MP4
-    # Chrome supports attachment up to 25 MB.
-    print "Converting video to a lower quality MP4"
-    subprocess.call(['avconv', '-i', 'output' + my_id + '.avi','-c:v', 'libx264', '-s', '640x360', '-c:a', 'copy', 'output' + my_id +'.mp4'])
-    video_attachment_path = 'output' + my_id + '.mp4'
+    # Convert video so that it can be sent via email
+    convert_video_to_lower_quality(video_id)
 
     # Send email to the user
     timestamps_email = ', '.join(map(str, timestamps))
     text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n" + timestamps_email
-    msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
-    msg.body = text
-    with app.open_resource(video_attachment_path) as fp:
-        msg.attach(video_attachment_path, 'video/mp4', fp.read())
-
-    with app.open_resource('THEFRAME.png') as fp:
-        msg.attach('THEFRAME.png', 'image/png', fp.read())
-
-
-    with app.app_context():
-        mail.send(msg)
+    send_results_via_email(video_attachment_path, roi_image_filename, email, video_id, text)
 
     # Remove all the video files
-    os.remove(video_path)
-    os.remove('THEFRAME.png')
-    os.remove(video_attachment_path)
-    os.remove(video_with_roi_path)
+    remove_attachment_files(video_path, roi_image_filename, video_attachment_path, video_with_roi_path)
 
 @celery.task
-def test_download_video(youtube_url):
-    videoextractor = VideoExtractor()
-    videoextractor.download_video(youtube_url)
+def process_object_detection_request(youtube_url, email, coordinates_roi, time_roi):
+    video_id = str(uuid.uuid4())
+    video_with_roi_path = 'output' + video_id + '.avi'
+    video_attachment_path = 'output' + video_id + '.mp4'
+    roi_image_filename = 'roi_image' + video_id + '.png'
 
-@celery.task
-def send_email(email, youtube_url,results):
-    timestamps_email = ', '.join(map(str, results))
-    print "In send_mail() function"
-    print timestamps_email
-    text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtain by the CV engine!" + timestamps_email
-    msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[email])
-    msg.body = text
-    with app.app_context():
-        mail.send(msg)
+    log_request_information(coordinates_roi, time_roi, email)
+
+    video_extractor = VideoExtractor(video_id)
+
+    # The name of the downloaded video will be dled_video + video_id
+    # This variable is used for uniqueness, it will allow multiple requests
+    # to be processed in parallel
+    video_extractor.download_video(youtube_url)
+    video_path = 'dled_video' + video_id + '.mp4'
+
+    # Begin the CV engine processing
+    print "Submitting video to the CV Engine"
+    subprocess.call(['./../computer_vision_engine/pallete/motion_tracker/object_detector', coordinates_roi[0][0],
+                     coordinates_roi[0][1]], coordinates_roi[3][0], coordinates_roi[3][1], time_roi, video_id)
+
+    # Convert video so that it can be sent via email
+    convert_video_to_lower_quality(video_id)
+
+    # Send email to the user
+    text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n"
+    send_results_via_email(video_attachment_path, roi_image_filename, email, video_id, text)
+
+    # Remove all the video files
+    remove_attachment_files(video_path, roi_image_filename, video_attachment_path, video_with_roi_path)
+
 
 if __name__ == '__main__':
     port_num = os.environ.get('PORT')

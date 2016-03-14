@@ -60,7 +60,6 @@ int main(int argc, char **argv){
     if(!capture.isOpened())
         throw "Error reading video";
 
-
     // Process the ROI
     capture.set(CV_CAP_PROP_POS_MSEC, time);
     Mat roi;
@@ -107,7 +106,9 @@ int main(int argc, char **argv){
     }
     writer.release();
 
-    return timestamps;
+    for (int i = 0; i < timestamps.size(); i++) {
+    	cout << timestamps[i] << endl;
+    }
 }
 
 
@@ -171,7 +172,6 @@ int display_matches(Mat image1, vector<KeyPoint> keyPoints1, Mat image2, vector<
     //rectangle(drawn_matches, bounding_box.tl(), bounding_box.br(), Scalar(255, 255, 255));
     
     drawMatches(image1, keyPoints1, image2, keyPoints2, filtered_matches, drawn_matches);
-
     if(!writer.isOpened()){
         int fourcc = CV_FOURCC('M','J','P','G');
         writer = VideoWriter(video_path.str(), fourcc, fps, Size(drawn_matches.cols, drawn_matches.rows), true);
