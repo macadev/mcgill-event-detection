@@ -131,14 +131,14 @@ def process_predict():
 
 
 @app.route('/submit-detection-request', methods = ['POST'])
-def process_predict():
+def process_object_detection():
     app.logger.info("Object detection request being processed")
     if request.headers['Content-Type'] == 'application/json':
         detection_attr = request.get_json()
 
         if detection_attr.get('youtube_url') and detection_attr.get('user_email') and detection_attr.get('points') and detection_attr.get('time'):
             youtube_url, user_email, coordinates_roi, time_roi = extract_request_data(detection_attr)
-            process_motion_tracking_request.delay(youtube_url, user_email, coordinates_roi, time_roi)
+	    process_object_detection_request.delay(youtube_url, user_email, coordinates_roi, time_roi)
             return "Generating predictions for the following URL: " + youtube_url
 
     data = {
@@ -181,7 +181,7 @@ def convert_video_to_lower_quality(video_id):
     # Convert the resulting AVI video to a lower quality MP4
     # Chrome supports attachment up to 25 MB.
     print "Converting video to a lower quality MP4"
-    subprocess.call(['avconv', '-i', 'output' + video_id + '.avi','-c:v', 'libx264', '-s', '640x360', '-c:a', 'copy', 'output' + video_id +'.mp4'])
+    subprocess.call(['avconv', '-i', 'output' + video_id + '.avi','-c:v', 'libx264', '-s', '320x180', '-c:a', 'copy', 'output' + video_id +'.mp4'])
 
 def send_results_via_email(video_attachment_path, roi_image_filename, destination_email, video_id, text):
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[destination_email])
@@ -265,8 +265,7 @@ def process_object_detection_request(youtube_url, email, coordinates_roi, time_r
 
     # Begin the CV engine processing
     print "Submitting video to the CV Engine"
-    subprocess.call(['./../computer_vision_engine/pallete/motion_tracker/object_detector', coordinates_roi[0][0],
-                     coordinates_roi[0][1]], coordinates_roi[3][0], coordinates_roi[3][1], time_roi, video_id)
+    subprocess.call(['./../computer_vision_engine/pallete/motion_tracker/object_detector', str(coordinates_roi[0][0]), str(coordinates_roi[0][1]), str(coordinates_roi[3][0]), str(coordinates_roi[3][1]), str(time_roi), video_id])
 
     # Convert video so that it can be sent via email
     convert_video_to_lower_quality(video_id)
