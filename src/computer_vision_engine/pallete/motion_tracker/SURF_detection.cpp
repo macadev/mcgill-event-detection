@@ -17,8 +17,10 @@ const string IMG_NAMES[] = {"/workbox/Design Project/Event_Detection/resources/i
                             "/workbox/Design Project/Event_Detection/resources/image_samples/javan6.png"};
 
 String detected;
+stringstream video_path;
 vector<double> timestamps;
 double fps;
+int drawn_matches_rows, drawn_matches_cols;
 VideoWriter writer;
 // Descriptor Objects
 const string algorithm = "SURF";
@@ -49,7 +51,12 @@ int main(int argc, char **argv){
     initModule_nonfree();
 
     // Load the video
-    VideoCapture capture(0);
+    //VideoCapture capture("/workbox/Design Project/Event_Detection/resources/video_samples/missing.mp4");
+    
+    stringstream input_video;
+    input_video <<  "/home/ubuntu/projects/Event_Detection/src/EventDetectionWebServer/dled_video" << output_video_id << ".mp4";
+    VideoCapture capture(input_video.str());
+    //VideoCapture capture(0);
     if(!capture.isOpened())
         throw "Error reading video";
 
@@ -62,12 +69,7 @@ int main(int argc, char **argv){
     
     // Initialize the video writer
     fps = capture.get(CV_CAP_PROP_FPS);
-    stringstream video_path;
-    int fourcc = CV_FOURCC('M','J','P','G');
-    video_path << "output" << output_video_id << ".avi";
-    writer = VideoWriter(video_path.str(), fourcc, fps, roi.size(), true);
 
-    
     // Determine region of interest
     int x1=126, y1=51;
     int x2=435, y2=444;
@@ -76,12 +78,12 @@ int main(int argc, char **argv){
     Mat masked_image;
     roi.copyTo(masked_image, mask);
 
-    stringstream roi_image;
-    roi_image << "roi_image" << output_video_id << ".png";
-
-    imwrite(roi_image, roi);
+    stringstream roi_path; 
+    roi_path << "/home/ubuntu/projects/Event_Detection/src/EventDetectionWebServer/roi_image" << output_video_id << ".png";
+    imwrite(roi_path.str(), masked_image);
 
     capture.set(CV_CAP_PROP_POS_MSEC, 0);
+    video_path << "/home/ubuntu/projects/Event_Detection/src/EventDetectionWebServer/output" << output_video_id << ".avi";
 
     // Compute features of the masked region
     vector<KeyPoint> roi_keyPoints; 
@@ -102,8 +104,10 @@ int main(int argc, char **argv){
 
         waitKey(1);
     }
+    writer.release();
+
     for (int i = 0; i < timestamps.size(); i++) {
-	cout << timestamps[i] << endl;
+    	cout << timestamps[i] << endl;
     }
 }
 
@@ -113,10 +117,10 @@ void compute_roi_features(Mat image, Mat mask, vector<KeyPoint> &roi_keyPoints, 
     descriptor_extractor->compute(image, roi_keyPoints, roi_descriptor); 
 
     // draw keyPoints
-    Mat roi_features;
-    drawKeypoints(image, roi_keyPoints, roi_features);
-    imshow("ROI features", roi_features);
-    waitKey(0);
+    //Mat roi_features;
+    //drawKeypoints(image, roi_keyPoints, roi_features);
+    //imshow("ROI features", roi_features);
+    //waitKey(0);
 }
 
 void compute_features(Mat image, vector<KeyPoint> &keyPoints, Mat &descriptor){
@@ -168,7 +172,12 @@ int display_matches(Mat image1, vector<KeyPoint> keyPoints1, Mat image2, vector<
     //rectangle(drawn_matches, bounding_box.tl(), bounding_box.br(), Scalar(255, 255, 255));
     
     drawMatches(image1, keyPoints1, image2, keyPoints2, filtered_matches, drawn_matches);
-    imshow("matches", drawn_matches);
+    if(!writer.isOpened()){
+        int fourcc = CV_FOURCC('M','J','P','G');
+        writer = VideoWriter(video_path.str(), fourcc, fps, Size(drawn_matches.cols, drawn_matches.rows), true);
+    }
+
+    //imshow("matches", drawn_matches);
     writer << drawn_matches;
     
     return detected == "Object Detected"? 1 : 0;
@@ -182,7 +191,7 @@ void read_images(vector<Mat> &images){
 
 void display_images(vector<Mat> images){
     for(int i=0;i<NUM_IMAGES;i++){
-        imshow("image ", images[i]);
-        waitKey(0);
+        //imshow("image ", images[i]);
+        //waitKey(0);
     }
 }
