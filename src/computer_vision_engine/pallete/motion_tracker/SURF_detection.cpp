@@ -45,8 +45,7 @@ int main(int argc, char **argv){
     double yy2 = stod(argv[4]);
     double time = stod(argv[5]);
     string output_video_id = argv[6];
-
-
+ 
     // Initialize OpenCV nonfree module
     initModule_nonfree();
 
@@ -61,9 +60,15 @@ int main(int argc, char **argv){
         throw "Error reading video";
 
     // Process the ROI
+    cout << "TIME!: " << time << endl;
     capture.set(CV_CAP_PROP_POS_MSEC, time);
     Mat roi;
     capture >> roi;
+	
+    int video_height = roi.rows;
+    int video_width = roi.cols;
+    cout << "Video Width: " << video_width << endl;
+    cout << "Video Height: " << video_height << endl;
 
     //Mat roi = imread("/workbox/Design Project/Event_Detection/resources/image_samples/roi_book.png");
     
@@ -71,10 +76,14 @@ int main(int argc, char **argv){
     fps = capture.get(CV_CAP_PROP_FPS);
 
     // Determine region of interest
-    int x1=126, y1=51;
-    int x2=435, y2=444;
     //Mat mask = determine_mask(roi, Rect(x1, y1, x2-x1, y2-y1));
-    Mat mask = determine_mask(roi, Rect(xx1, yy1, xx2-xx1, yy2-yy1));
+
+    int scaled_x1 = xx1 / 640 * video_width;
+    int scaled_y1 = yy1 / 360 * video_height;
+    int scaled_x2 = xx2 / 640 * video_width;
+    int scaled_y2 = yy2 / 360 * video_height;	
+
+    Mat mask = determine_mask(roi, Rect(scaled_x1, scaled_y1, scaled_x2 - scaled_x1, scaled_y2 - scaled_y1));
     Mat masked_image;
     roi.copyTo(masked_image, mask);
 
@@ -89,9 +98,14 @@ int main(int argc, char **argv){
     vector<KeyPoint> roi_keyPoints; 
     Mat roi_descriptor;
     compute_roi_features(roi, mask, roi_keyPoints, roi_descriptor);
-    
+    int counter = 0;
     Mat frame;
     for(capture>>frame;!frame.empty();capture>>frame){
+	/*if (counter++ % 5 != 0) {
+	    writer << frame;
+	    continue;
+	}
+        cout << "Processed 10 frames!" << endl;*/
         vector<KeyPoint> keyPoints;
         Mat descriptor;
         compute_features(frame, keyPoints, descriptor);

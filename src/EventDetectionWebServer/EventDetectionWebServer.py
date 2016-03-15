@@ -177,11 +177,11 @@ def not_found(error=None):
 
 ### FUNCTIONS CELERY TASKS RELY ON ###
 
-def convert_video_to_lower_quality(video_id):
+def convert_video_to_lower_quality(video_id, quality='640x360'):
     # Convert the resulting AVI video to a lower quality MP4
     # Chrome supports attachment up to 25 MB.
     print "Converting video to a lower quality MP4"
-    subprocess.call(['avconv', '-i', 'output' + video_id + '.avi','-c:v', 'libx264', '-s', '320x180', '-c:a', 'copy', 'output' + video_id +'.mp4'])
+    subprocess.call(['avconv', '-i', 'output' + video_id + '.avi','-c:v', 'libx264', '-s', quality, '-c:a', 'copy', 'output' + video_id +'.mp4'])
 
 def send_results_via_email(video_attachment_path, roi_image_filename, destination_email, video_id, text):
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[destination_email])
@@ -265,7 +265,7 @@ def process_object_detection_request(youtube_url, email, coordinates_roi, time_r
 
     # Begin the CV engine processing
     print "Submitting video to the CV Engine"
-    subprocess.call(['./../computer_vision_engine/pallete/motion_tracker/object_detector', str(coordinates_roi[0][0]), str(coordinates_roi[0][1]), str(coordinates_roi[3][0]), str(coordinates_roi[3][1]), str(time_roi), video_id])
+    subprocess.call(['./../computer_vision_engine/pallete/motion_tracker/object_detector', str(coordinates_roi[0][0]), str(coordinates_roi[0][1]), str(coordinates_roi[2][0]), str(coordinates_roi[2][1]), str(time_roi), video_id])
 
     # Convert video so that it can be sent via email
     convert_video_to_lower_quality(video_id)
