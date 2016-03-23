@@ -74,6 +74,7 @@ int main(int argc, char **argv){
     
     // Initialize the video writer
     fps = capture.get(CV_CAP_PROP_FPS);
+    int number_of_frames = capture.get(CV_CAP_PROP_FRAME_COUNT);
 
     // Determine region of interest
     //Mat mask = determine_mask(roi, Rect(x1, y1, x2-x1, y2-y1));
@@ -98,7 +99,9 @@ int main(int argc, char **argv){
     vector<KeyPoint> roi_keyPoints; 
     Mat roi_descriptor;
     compute_roi_features(roi, mask, roi_keyPoints, roi_descriptor);
-    int counter = 0;
+    double counter = 0;
+    int prev_percent_complete = 0;
+    int current_percent_complete = 0;
     Mat frame;
     for(capture>>frame;!frame.empty();capture>>frame){
 	/*if (counter++ % 5 != 0) {
@@ -106,6 +109,14 @@ int main(int argc, char **argv){
 	    continue;
 	}
         cout << "Processed 10 frames!" << endl;*/
+
+	current_percent_complete = int ((counter / number_of_frames) * 100);
+	cout << current_percent_complete << endl;
+	if (current_percent_complete != prev_percent_complete) {
+	    cout << current_percent_complete << "%" << endl;
+	}	
+	prev_percent_complete = current_percent_complete;
+
         vector<KeyPoint> keyPoints;
         Mat descriptor;
         compute_features(frame, keyPoints, descriptor);
@@ -117,6 +128,7 @@ int main(int argc, char **argv){
             timestamps.push_back(capture.get(CV_CAP_PROP_POS_MSEC)/1000);
 
         waitKey(1);
+	counter++;
     }
     writer.release();
 
