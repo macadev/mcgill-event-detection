@@ -16,6 +16,7 @@ from celery import Celery
 from flask.ext.mail import Mail, Message
 from flask.ext.cors import CORS, cross_origin
 from dboperations import DBOperations as db
+from dboperations import STATUS_CODES
 
 # Initialize Web Server along with Celery
 app = Flask(__name__)
@@ -247,30 +248,44 @@ def perform_request_postprocessing(video_id, timestamps, youtube_url, video_atta
 
 ### CELERY TASKS ###
 
-
 @celery.task
 def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_roi):
-    video_path, video_id, video_attachment_path, roi_image_filename, video_with_roi_path = \
-        perform_request_preprocessing(youtube_url, email, coordinates_roi, time_roi)
+    req_id = db.submit_tag_generation_request(email, youtube_url)
 
-    # Begin the CV engine processing
-    print "Submitting video to the CV Engine"
-    timestamps = start(video_path, coordinates_roi, time_roi, video_id)
+    try:
+        video_path, video_id, video_attachment_path, roi_image_filename, video_with_roi_path = \
+            perform_request_preprocessing(youtube_url, email, coordinates_roi, time_roi)
 
-    perform_request_postprocessing(video_id, timestamps, youtube_url, video_attachment_path, roi_image_filename,
-                                   email, video_path, video_with_roi_path)
+        # Begin the CV engine processing
+        print "Submitting video to the CV Engine"
+        timestamps = start(video_path, coordinates_roi, time_roi, video_id)
+
+        perform_request_postprocessing(video_id, timestamps, youtube_url, video_attachment_path, roi_image_filename,
+                                       email, video_path, video_with_roi_path)
+
+        db.change_request_status(req_id, STATUS_CODES.completed)
+    except:
+        print "Error occurred while completing motion tracking request"
+        db.change_request_status(req_id, STATUS_CODES.failed)
+
 
 @celery.task
 def process_object_detection_request(youtube_url, email, coordinates_roi, time_roi):
-    video_path, video_id, video_attachment_path, roi_image_filename, video_with_roi_path = \
-        perform_request_preprocessing(youtube_url, email, coordinates_roi, time_roi)
+    req_id = db.submit_tag_generation_request(email, youtube_url)
 
-    # Begin the CV engine processing
-    print "Submitting video to the CV Engine"
-    subprocess.call(['./../computer_vision_engine/pallete/motion_tracker/object_detector', str(coordinates_roi[0][0]), str(coordinates_roi[0][1]), str(coordinates_roi[2][0]), str(coordinates_roi[2][1]), str(time_roi), video_id])
+    try:
+        video_path, video_id, video_attachment_path, roi_image_filename, video_with_roi_path = \
+            perform_request_preprocessing(youtube_url, email, coordinates_roi, time_roi)
 
-    perform_request_postprocessing(video_id, None, youtube_url, video_attachment_path, roi_image_filename,
-                                   email, video_path, video_with_roi_path)
+        # Begin the CV engine processing
+        print "Submitting video to the CV Engine"
+        subprocess.call(['./../computer_vision_engine/pallete/motion_tracker/object_detector', str(coordinates_roi[0][0]), str(coordinates_roi[0][1]), str(coordinates_roi[2][0]), str(coordinates_roi[2][1]), str(time_roi), video_id])
+
+        perform_request_postprocessing(video_id, None, youtube_url, video_attachment_path, roi_image_filename,
+                                       email, video_path, video_with_roi_path)
+    except:
+        print "Error occurred while completing object detection request"
+        db.change_request_status(req_id, STATUS_CODES.failed)
 
 
 if __name__ == '__main__':

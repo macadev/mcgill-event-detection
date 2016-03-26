@@ -8,13 +8,13 @@ class and use it communicate with the DB. Feel free to add more operations!
 
 fireDB = firebase.FirebaseApplication('https://flickering-heat-6138.firebaseio.com', None)
 
-class StatusCode(object):
+class RequestStatus(object):
     def __init__(self):
         self.processing = 'processing'
         self.completed = 'completed'
         self.failed = 'failed'
 
-STATUS_CODES = StatusCode()
+STATUS_CODES = RequestStatus()
 
 class DBOperations():
 
