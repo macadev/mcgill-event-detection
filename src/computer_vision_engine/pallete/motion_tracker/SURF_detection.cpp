@@ -206,7 +206,7 @@ int display_matches(Mat image1, vector<KeyPoint> keyPoints1, Mat image2, vector<
     //imshow("matches", drawn_matches);
     writer << drawn_matches;
     
-    return detected == "Object Detected"? 1 : 0;
+    return detected.compare("Object Detected") == 0? 1 : 0;
 }
 
 void read_images(vector<Mat> &images){
