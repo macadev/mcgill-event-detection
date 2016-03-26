@@ -15,6 +15,7 @@ from computer_vision_engine.pallete.motion_tracker.HSV_tracker import start
 from celery import Celery
 from flask.ext.mail import Mail, Message
 from flask.ext.cors import CORS, cross_origin
+from dboperations import DBOperations as db
 
 # Initialize Web Server along with Celery
 app = Flask(__name__)
@@ -211,11 +212,7 @@ def log_request_information(coordinates_roi, time_roi, email):
     print "Destination Email = " + email
 
 
-### CELERY TASKS ###
-
-
-@celery.task
-def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_roi):
+def perform_request_preprocessing(youtube_url, email, coordinates_roi, time_roi):
     video_id = str(uuid.uuid4())
     video_with_roi_path = 'output' + video_id + '.avi'
     video_attachment_path = 'output' + video_id + '.mp4'
@@ -231,9 +228,10 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     video_extractor.download_video(youtube_url)
     video_path = 'dled_video' + video_id + '.mp4'
 
-    # Begin the CV engine processing
-    print "Submitting video to the CV Engine"
-    timestamps = start(video_path, coordinates_roi, time_roi, video_id)
+    return video_path, video_id, video_attachment_path, roi_image_filename, video_with_roi_path
+
+def perform_request_postprocessing(video_id, timestamps, youtube_url, video_attachment_path, roi_image_filename,
+                                   email, video_path, video_with_roi_path):
 
     # Convert video so that it can be sent via email
     convert_video_to_lower_quality(video_id)
@@ -246,36 +244,33 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
     # Remove all the video files
     remove_attachment_files(video_path, roi_image_filename, video_attachment_path, video_with_roi_path)
 
+
+### CELERY TASKS ###
+
+
+@celery.task
+def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_roi):
+    video_path, video_id, video_attachment_path, roi_image_filename, video_with_roi_path = \
+        perform_request_preprocessing(youtube_url, email, coordinates_roi, time_roi)
+
+    # Begin the CV engine processing
+    print "Submitting video to the CV Engine"
+    timestamps = start(video_path, coordinates_roi, time_roi, video_id)
+
+    perform_request_postprocessing(video_id, timestamps, youtube_url, video_attachment_path, roi_image_filename,
+                                   email, video_path, video_with_roi_path)
+
 @celery.task
 def process_object_detection_request(youtube_url, email, coordinates_roi, time_roi):
-    video_id = str(uuid.uuid4())
-    video_with_roi_path = 'output' + video_id + '.avi'
-    video_attachment_path = 'output' + video_id + '.mp4'
-    roi_image_filename = 'roi_image' + video_id + '.png'
-
-    log_request_information(coordinates_roi, time_roi, email)
-
-    video_extractor = VideoExtractor(video_id)
-
-    # The name of the downloaded video will be dled_video + video_id
-    # This variable is used for uniqueness, it will allow multiple requests
-    # to be processed in parallel
-    video_extractor.download_video(youtube_url)
-    video_path = 'dled_video' + video_id + '.mp4'
+    video_path, video_id, video_attachment_path, roi_image_filename, video_with_roi_path = \
+        perform_request_preprocessing(youtube_url, email, coordinates_roi, time_roi)
 
     # Begin the CV engine processing
     print "Submitting video to the CV Engine"
     subprocess.call(['./../computer_vision_engine/pallete/motion_tracker/object_detector', str(coordinates_roi[0][0]), str(coordinates_roi[0][1]), str(coordinates_roi[2][0]), str(coordinates_roi[2][1]), str(time_roi), video_id])
 
-    # Convert video so that it can be sent via email
-    convert_video_to_lower_quality(video_id)
-
-    # Send email to the user
-    text = "Hello! You requested predictions for: " + youtube_url + " These are the timestamps obtained by the CV engine!\n"
-    send_results_via_email(video_attachment_path, roi_image_filename, email, video_id, text)
-
-    # Remove all the video files
-    remove_attachment_files(video_path, roi_image_filename, video_attachment_path, video_with_roi_path)
+    perform_request_postprocessing(video_id, None, youtube_url, video_attachment_path, roi_image_filename,
+                                   email, video_path, video_with_roi_path)
 
 
 if __name__ == '__main__':
