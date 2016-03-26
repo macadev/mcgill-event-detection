@@ -17,6 +17,7 @@ from flask.ext.mail import Mail, Message
 from flask.ext.cors import CORS, cross_origin
 from dboperations import DBOperations as db
 from dboperations import STATUS_CODES
+from cvenginerequesttype import CVEngineRequestType
 
 # Initialize Web Server along with Celery
 app = Flask(__name__)
@@ -119,7 +120,7 @@ def process_predict():
 
         if tracking_attr .get('youtube_url') and tracking_attr .get('user_email') and tracking_attr .get('points') and tracking_attr .get('time'):
             youtube_url, user_email, coordinates_roi, time_roi = extract_request_data(tracking_attr )
-            process_motion_tracking_request.delay(youtube_url, user_email, coordinates_roi, time_roi)
+            process_cv_engine_request.delay(youtube_url, user_email, coordinates_roi, time_roi, CVEngineRequestType.MotionTracking)
             return "Generating predictions for the following URL: " + youtube_url
 
     data = {
@@ -140,7 +141,7 @@ def process_object_detection():
 
         if detection_attr.get('youtube_url') and detection_attr.get('user_email') and detection_attr.get('points') and detection_attr.get('time'):
             youtube_url, user_email, coordinates_roi, time_roi = extract_request_data(detection_attr)
-	    process_object_detection_request.delay(youtube_url, user_email, coordinates_roi, time_roi)
+            process_cv_engine_request.delay(youtube_url, user_email, coordinates_roi, time_roi, CVEngineRequestType.ObjectDetection)
             return "Generating predictions for the following URL: " + youtube_url
 
     data = {
@@ -179,11 +180,13 @@ def not_found(error=None):
 
 ### FUNCTIONS CELERY TASKS RELY ON ###
 
+
 def convert_video_to_lower_quality(video_id, quality='640x360'):
     # Convert the resulting AVI video to a lower quality MP4
     # Chrome supports attachment up to 25 MB.
     print "Converting video to a lower quality MP4"
     subprocess.call(['avconv', '-i', 'output' + video_id + '.avi','-c:v', 'libx264', '-s', quality, '-c:a', 'copy', 'output' + video_id +'.mp4'])
+
 
 def send_results_via_email(video_attachment_path, roi_image_filename, destination_email, video_id, text):
     msg = Message('Hey there!', sender='eventdetectionmcgill@gmail.com', recipients=[destination_email])
@@ -198,12 +201,14 @@ def send_results_via_email(video_attachment_path, roi_image_filename, destinatio
     with app.app_context():
         mail.send(msg)
 
+
 def remove_attachment_files(video_path, roi_image_filename, video_attachment_path, video_with_roi_path):
     # Remove all the video files
     os.remove(video_path)
     os.remove(roi_image_filename)
     os.remove(video_attachment_path)
     os.remove(video_with_roi_path)
+
 
 def log_request_information(coordinates_roi, time_roi, email):
     print "Processing motion tracking request"
@@ -231,6 +236,7 @@ def perform_request_preprocessing(youtube_url, email, coordinates_roi, time_roi)
 
     return video_path, video_id, video_attachment_path, roi_image_filename, video_with_roi_path
 
+
 def perform_request_postprocessing(video_id, timestamps, youtube_url, video_attachment_path, roi_image_filename,
                                    email, video_path, video_with_roi_path):
 
@@ -248,9 +254,11 @@ def perform_request_postprocessing(video_id, timestamps, youtube_url, video_atta
 
 ### CELERY TASKS ###
 
+
 @celery.task
-def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_roi):
+def process_cv_engine_request(youtube_url, email, coordinates_roi, time_roi, request_type):
     req_id = db.submit_tag_generation_request(email, youtube_url)
+    timestamps = []
 
     try:
         video_path, video_id, video_attachment_path, roi_image_filename, video_with_roi_path = \
@@ -258,33 +266,23 @@ def process_motion_tracking_request(youtube_url, email, coordinates_roi, time_ro
 
         # Begin the CV engine processing
         print "Submitting video to the CV Engine"
-        timestamps = start(video_path, coordinates_roi, time_roi, video_id)
 
+        if request_type == CVEngineRequestType.MotionTracking:
+            timestamps = start(video_path, coordinates_roi, time_roi, video_id)
+        elif request_type == CVEngineRequestType.ObjectDetection:
+            subprocess.call(['./../computer_vision_engine/pallete/motion_tracker/object_detector',
+                             str(coordinates_roi[0][0]), str(coordinates_roi[0][1]), str(coordinates_roi[2][0]),
+                             str(coordinates_roi[2][1]), str(time_roi), video_id])
+
+        # Delete video files, send email
         perform_request_postprocessing(video_id, timestamps, youtube_url, video_attachment_path, roi_image_filename,
                                        email, video_path, video_with_roi_path)
 
+        # Change request status to completed
         db.change_request_status(req_id, STATUS_CODES.completed)
     except:
         print "Error occurred while completing motion tracking request"
-        db.change_request_status(req_id, STATUS_CODES.failed)
-
-
-@celery.task
-def process_object_detection_request(youtube_url, email, coordinates_roi, time_roi):
-    req_id = db.submit_tag_generation_request(email, youtube_url)
-
-    try:
-        video_path, video_id, video_attachment_path, roi_image_filename, video_with_roi_path = \
-            perform_request_preprocessing(youtube_url, email, coordinates_roi, time_roi)
-
-        # Begin the CV engine processing
-        print "Submitting video to the CV Engine"
-        subprocess.call(['./../computer_vision_engine/pallete/motion_tracker/object_detector', str(coordinates_roi[0][0]), str(coordinates_roi[0][1]), str(coordinates_roi[2][0]), str(coordinates_roi[2][1]), str(time_roi), video_id])
-
-        perform_request_postprocessing(video_id, None, youtube_url, video_attachment_path, roi_image_filename,
-                                       email, video_path, video_with_roi_path)
-    except:
-        print "Error occurred while completing object detection request"
+        # Change request status to failed
         db.change_request_status(req_id, STATUS_CODES.failed)
 
 
