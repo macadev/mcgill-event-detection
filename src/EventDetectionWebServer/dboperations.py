@@ -1,4 +1,5 @@
 from firebase import firebase
+from datetime import datetime
 
 '''
 This class is the layer used to interact with the database. The functions defined here
@@ -27,7 +28,8 @@ class DBOperations():
         request_data = {
             'user_email': user_email,
             'video_url': video_url,
-            'status': STATUS_CODES.processing
+            'status': STATUS_CODES.processing,
+            'time': datetime.now().strftime("%c")
         }
 
         response_data = fireDB.post('/tag-generation-request', request_data)
