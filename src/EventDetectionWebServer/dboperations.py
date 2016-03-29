@@ -51,12 +51,12 @@ class DBOperations():
         return True
 
     @staticmethod
-    def store_generated_tags(req_id, timestamps, video_url, request_type):
+    def store_generated_tags(req_id, tags, video_url, request_type):
         tag_data = {}
-        for timestamp in timestamps:
+        for tag in tags:
             tag_data['link'] = video_url
-            tag_data['starttime'] = timestamp
-            tag_data['endtime'] = timestamp
+            tag_data['starttime'] = tag['starttime']
+            tag_data['endtime'] = tag['endtime']
             tag_data['chapter'] = ''
             tag_data['req_id'] = req_id
             if request_type is CVEngineRequestType.ObjectDetection:
