@@ -36,9 +36,10 @@ void compute_roi_features(Mat, Mat, vector<KeyPoint> &, Mat &);
 void compute_features(Mat, vector<KeyPoint> &, Mat &);
 void compare_matches(Mat, Mat, vector<DMatch> &);
 int display_matches(Mat, vector<KeyPoint>, Mat, vector<KeyPoint>, vector<DMatch>);
+void printParams(Algorithm *algorithm);
 
 int main(int argc, char **argv){
-
+    printParams(feature_detector); 
     double xx1 = stod(argv[1]);
     double yy1 = stod(argv[2]);
     double xx2 = stod(argv[3]);
@@ -104,11 +105,11 @@ int main(int argc, char **argv){
     int current_percent_complete = 0;
     Mat frame;
     for(capture>>frame;!frame.empty();capture>>frame){
-	/*if (counter++ % 5 != 0) {
+	if (counter++ 10 != 0) {
 	    writer << frame;
 	    continue;
 	}
-        cout << "Processed 10 frames!" << endl;*/
+        //cout << "Processed 10 frames!" << endl;
 
 	current_percent_complete = int ((counter / number_of_frames) * 100);
 	cout << current_percent_complete << endl;
@@ -206,7 +207,7 @@ int display_matches(Mat image1, vector<KeyPoint> keyPoints1, Mat image2, vector<
     //imshow("matches", drawn_matches);
     writer << drawn_matches;
     
-    return detected == "Object Detected"? 1 : 0;
+    return detected.compare("Object Detected") == 0? 1 : 0;
 }
 
 void read_images(vector<Mat> &images){
@@ -219,5 +220,42 @@ void display_images(vector<Mat> images){
     for(int i=0;i<NUM_IMAGES;i++){
         //imshow("image ", images[i]);
         //waitKey(0);
+    }
+}
+
+void printParams( cv::Algorithm* algorithm ) {
+    std::vector<std::string> parameters;
+    algorithm->getParams(parameters);
+
+    for (int i = 0; i < (int) parameters.size(); i++) {
+        std::string param = parameters[i];
+        int type = algorithm->paramType(param);
+        std::string helpText = algorithm->paramHelp(param);
+        std::string typeText;
+
+        switch (type) {
+        case cv::Param::BOOLEAN:
+            typeText = "bool";
+            break;
+        case cv::Param::INT:
+            typeText = "int";
+            break;
+        case cv::Param::REAL:
+            typeText = "real (double)";
+            break;
+        case cv::Param::STRING:
+            typeText = "string";
+            break;
+        case cv::Param::MAT:
+            typeText = "Mat";
+            break;
+        case cv::Param::ALGORITHM:
+            typeText = "Algorithm";
+            break;
+        case cv::Param::MAT_VECTOR:
+            typeText = "Mat vector";
+            break;
+        }
+        std::cout << "Parameter '" << param << "' type=" << typeText << " help=" << helpText << std::endl;
     }
 }
