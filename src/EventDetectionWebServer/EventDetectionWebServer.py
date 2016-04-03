@@ -117,31 +117,13 @@ def process_predict():
     app.logger.info("predict request being processed")
     if request.headers['Content-Type'] == 'application/json':
         tracking_attr = request.get_json()
+        if tracking_attr.get('youtube_url') and tracking_attr.get('user_email') and tracking_attr.get('points') and tracking_attr.get('time') and tracking_attr.get('cv_type') and tracking_attr.get('sampling_rate'):
+            youtube_url, user_email, coordinates_roi, time_roi, cv_type, sampling_rate = extract_request_data(tracking_attr)
+            if cv_type == 'HSV':
+                process_cv_engine_request.delay(youtube_url, user_email, coordinates_roi, time_roi, CVEngineRequestType.MotionTracking, sampling_rate)
+            elif cv_type == 'SURF':
+                process_cv_engine_request.delay(youtube_url, user_email, coordinates_roi, time_roi, CVEngineRequestType.ObjectDetection, sampling_rate)
 
-        if tracking_attr .get('youtube_url') and tracking_attr .get('user_email') and tracking_attr .get('points') and tracking_attr .get('time'):
-            youtube_url, user_email, coordinates_roi, time_roi = extract_request_data(tracking_attr )
-            process_cv_engine_request.delay(youtube_url, user_email, coordinates_roi, time_roi, CVEngineRequestType.MotionTracking)
-            return "Generating predictions for the following URL: " + youtube_url
-
-    data = {
-        'error_message' : 'The submitted data is not JSON, or the request is incomplete.'
-    }
-    js = json.dumps(data)
-
-    resp = Response(js, status=400, mimetype='application/json')
-    app.logger.info("predict request failed")
-    return resp
-
-
-@app.route('/submit-detection-request', methods = ['POST'])
-def process_object_detection():
-    app.logger.info("Object detection request being processed")
-    if request.headers['Content-Type'] == 'application/json':
-        detection_attr = request.get_json()
-
-        if detection_attr.get('youtube_url') and detection_attr.get('user_email') and detection_attr.get('points') and detection_attr.get('time'):
-            youtube_url, user_email, coordinates_roi, time_roi = extract_request_data(detection_attr)
-            process_cv_engine_request.delay(youtube_url, user_email, coordinates_roi, time_roi, CVEngineRequestType.ObjectDetection)
             return "Generating predictions for the following URL: " + youtube_url
 
     data = {
@@ -165,7 +147,11 @@ def extract_request_data(request_attr):
     coordinates_roi = np.array([list(elem) for elem in zip(it, it)])
     # The timestamp must be stored in milliseconds
     time_roi = float(request_attr.get('time')) * 1000.0
-    return youtube_url, user_email, coordinates_roi, time_roi
+    cv_type = request_attr.get('cv_type')
+    print "CV Type: ", cv_type
+    sampling_rate = int(request_attr.get('sampling_rate'))
+    print "Sampling rate: ", sampling_rate
+    return youtube_url, user_email, coordinates_roi, time_roi, cv_type, sampling_rate
 
 
 @app.errorhandler(404)
@@ -268,7 +254,7 @@ def create_tags(timestamps):
 
 
 @celery.task
-def process_cv_engine_request(youtube_url, email, coordinates_roi, time_roi, request_type):
+def process_cv_engine_request(youtube_url, email, coordinates_roi, time_roi, request_type, sampling_rate):
     req_id = db.submit_tag_generation_request(email, youtube_url)
     timestamps = []
 
