@@ -1,0 +1,26 @@
+./dboperations.py:26:            print "Tag generation request cannot be completed, please supply email and video url"
+./dboperations.py:43:            print "Cannot change status of tag, no req with the ID exists"
+./EventDetectionWebServer.py:119:    print "Video URL:", youtube_url
+./EventDetectionWebServer.py:122:    print user_email
+./EventDetectionWebServer.py:134:    print "CV Type: ", cv_type
+./EventDetectionWebServer.py:137:    print "Sampling rate: ", sampling_rate
+./EventDetectionWebServer.py:146:        print "Did not receive start and end time"
+./EventDetectionWebServer.py:156:    print "Directions of interest: ", directions_of_interest
+./EventDetectionWebServer.py:184:    print "Converting video to a lower quality MP4"
+./EventDetectionWebServer.py:200:        print "Video is too large. Will not email it."
+./EventDetectionWebServer.py:221:    print "Processing motion tracking request"
+./EventDetectionWebServer.py:222:    print "ROI Coordinates"
+./EventDetectionWebServer.py:223:    print coordinates_roi
+./EventDetectionWebServer.py:224:    print "Time = " + str(time_roi)
+./EventDetectionWebServer.py:225:    print "Destination Email = " + email
+./EventDetectionWebServer.py:291:        print "Submitting video to the CV Engine"
+./EventDetectionWebServer.py:293:        print "start time ", start_time
+./EventDetectionWebServer.py:294:        print "end time ", end_time
+./EventDetectionWebServer.py:300:                print "ITERATING OVER DIRECTION", direction
+./EventDetectionWebServer.py:302:                print "CREATED TAGS"
+./EventDetectionWebServer.py:304:                    print tag
+./EventDetectionWebServer.py:325:        print "Error occurred while completing motion tracking request"
+./static/js/main.js:64:    printData();
+./static/js/main.js:108:    printData();
+./static/js/main.js:111:function printData(){
+./videoextractor.py:8:        print('Done downloading.')

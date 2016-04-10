@@ -1,36 +1,28 @@
 import cv2
 from collections import deque
 import numpy as np
-#from feature_extractor.HSV_extractor import *
 from computer_vision_engine.pallete.feature_extractor.HSV_extractor import *
-#from computer_vision_engine.event_handler.event_logger import *
-
+from computer_vision_engine.pallete.processing_options.options import *
 __author__ = 'yarden'
 
 
 class Tracker:
 
-    def __init__(self, lower=(0, 0, 0), upper=(255, 255, 255), buff=32, r=10, objects=1, drawing=True, camera=0):
+    def __init__(self, options, lower=(0, 0, 0), upper=(255, 255, 255), buff=32, r=10, objects=1, drawing=True, camera=0):
 
         self.feature_extractor = HSVExtractor()
+        self.options = options;
         self.camera = camera
         self.buff = 32
         self.pts = deque(maxlen=32)
         self.direction = ""
         self.counter = self.dX = self.dY = 0
 
-        self.timestamps = []
-
-        '''self.lowerHSVBound = lower
-        self.upperHSVBound = upper
-        self.buff = buff
-        self.objects = objects
-        self.minRadius = r
-        self.pts = deque(maxlen=buff)
-        self.counter = self.dX = self.dY = 0
-        self.direction = ""
-        self.drawing = True
-        self.motion = Motion(init_motion=False if camera==0 else True)'''
+        self.timestamps = {
+            'N': [], 'S': [], 'E': [], 'W': [],
+            'NE': [], 'NW': [], 'SE': [], 'SW': [],
+            'directions_used': []
+        }
 
     def set_lower_hsv_bounds(self, lower):
         self.lowerHSVBound = lower
@@ -44,10 +36,11 @@ class Tracker:
         return mask
 
     def track_object(self, coordinates_roi, timestamp, output_video_id):
-	roi_image_filename = 'roi_image' + output_video_id + '.png'
+        print "--> about to track object"
+        roi_image_filename = 'roi_image' + output_video_id + '.png'
         camera = cv2.VideoCapture(self.camera)
         fps = camera.get(cv2.cv.CV_CAP_PROP_FPS)
-	
+
         (grabbed, frame) = camera.read()
 
         # initialize video writer
@@ -63,8 +56,8 @@ class Tracker:
         # process ROI
         camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, timestamp)
         (grabbed, frame) = camera.read()
-        
-	'''
+
+        '''
         roi_mask = self.roi_to_mask(coordinates_roi, frame)
         print "dir(roi_mask)"
         dir(roi_mask)
@@ -80,58 +73,62 @@ class Tracker:
         # set up the ROI for tracking
         #roi = frame[682:771, 306:522]
         #roi = frame[306:522, 700:791]
-	
-	# cross multiply to translate ROI
-	client_x1 = coordinates_roi[0][0]
-	client_y1 = coordinates_roi[0][1]
-	client_x2 = coordinates_roi[2][0]
-	client_y2 = coordinates_roi[2][1]
-	
-	# Scale the coordiantes of the ROI to correspond with the downlaoded video
-	scaled_x1 = client_x1 / 640 * w
-	scaled_y1 = client_y1 / 360 * h
-	scaled_x2 = client_x2 / 640 * w
-	scaled_y2 = client_y2 / 360 * h
-		
-	print('scaled x1', scaled_x1)
-	print('scaled x2', scaled_x2)
-	print('scaled y1', scaled_y1)
-	print('scaled y2', scaled_y2)
-	
-	# First specify using y, then x
-	roi = frame[scaled_y1:scaled_y2,scaled_x1:scaled_x2]
-        
-	#r = np.array([[682, 306], [771, 306], [771, 522], [682, 522]])
+
+    	# cross multiply to translate ROI
+    	client_x1 = coordinates_roi[0][0]
+        client_y1 = coordinates_roi[0][1]
+        client_x2 = coordinates_roi[2][0]
+        client_y2 = coordinates_roi[2][1]
+
+        # Scale the coordiantes of the ROI to correspond with the downlaoded video
+    	scaled_x1 = client_x1 / 640 * w
+        scaled_y1 = client_y1 / 360 * h
+        scaled_x2 = client_x2 / 640 * w
+        scaled_y2 = client_y2 / 360 * h
+
+        print('scaled x1', scaled_x1)
+        print('scaled x2', scaled_x2)
+        print('scaled y1', scaled_y1)
+        print('scaled y2', scaled_y2)
+
+        # First specify using y, then x
+    	roi = frame[scaled_y1:scaled_y2,scaled_x1:scaled_x2]
+
+        #r = np.array([[682, 306], [771, 306], [771, 522], [682, 522]])
         #r = np.int32([r])
         #theframe = cv2.fillPoly(frame, r, (255, 255, 255))
         cv2.imwrite(roi_image_filename, roi)
 
-	#roi = cv2.imread(roi_image_filename)
-	
-	# Prepare HSV to extract the histogram
+        #roi = cv2.imread(roi_image_filename)
+
+    	# Prepare HSV to extract the histogram
         hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        print('Called cvtColor on ROI successfully') 
-	
+        print('Called cvtColor on ROI successfully')
+
         roi = (0, 0, h, w)
         #mask = cv2.inRange(hsv_roi, np.array((0., 60.,32.)), np.array((180.,255.,255.)))
         #mask = cv2.inRange(hsv_roi, (0., 60., 32.), (180., 255., 255.))
-	
-	roi_hist = cv2.calcHist([hsv_roi],[0],None,[16],[0,180])
+
+    	roi_hist = cv2.calcHist([hsv_roi],[0],None,[16],[0,180])
         roi_hist = cv2.normalize(roi_hist,roi_hist,0,255,cv2.NORM_MINMAX)
         #roi_hist = cv2.normalize(roi_hist).flatten()
-	print('found the roi_hist')
-        
-	# Roll back video to the beginning
-	camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, 0)
+    	print('found the roi_hist')
+        # Roll back video to the start time
+        camera.set(cv2.cv.CV_CAP_PROP_POS_MSEC, self.options.start_time)
 
         termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 
-        while 1:
+        rate = 0
+        while (camera.get(cv2.cv.CV_CAP_PROP_POS_MSEC) < self.options.end_time or self.options.end_time == 0):
             (grabbed, frame) = camera.read()
             #frame = cv2.flip(frame, 1)
             if not grabbed:
                 print "error fetching camera."
                 return self.timestamps
+
+            rate = rate + 1
+            if rate % self.options.sampling_rate != 0:
+                continue
 
             #mask = self.construct_mask(frame)
 
@@ -139,10 +136,9 @@ class Tracker:
             backProj = cv2.calcBackProject([hsv], [0], roi_hist, [0, 180], 1)
 
             #roi = (0, 0, h, w)
-	    if(roi == (0, 0, 0, 0)):
-		roi = (0, 0, h, w)
+            if (roi == (0, 0, 0, 0)):
+                roi = (0, 0, h, w)
             if(backProj.any()):
-		#print(roi)
                 (r, roi) = cv2.CamShift(backProj, roi, termination)
                 pts = np.int0(cv2.cv.BoxPoints(r))
                 cv2.polylines(frame, [pts], True, (255, 0, 0), 2)
@@ -151,13 +147,18 @@ class Tracker:
                 self.pts.appendleft(((int)(c_x), (int)(c_y)))
 
                 #cv2.imshow("frame", frame)
-            	writer.write(frame)
+                writer.write(frame)
 
             self.track_points(frame)
 
-            if self.direction == "South-West":
+            #if self.direction == "South-West":
+            if any([self.direction == d for d in self.options.direction]):
                 time = camera.get(cv2.cv.CV_CAP_PROP_POS_MSEC)/1000
-                self.timestamps.append(time)
+                self.timestamps[self.direction].append(time)
+                if self.direction not in self.timestamps['directions_used']:
+                    print "ADDING DIRECTION!!", self.direction
+                    self.timestamps['directions_used'].append(self.direction)
+
 
             #writer.write(frame)
 
@@ -184,6 +185,7 @@ class Tracker:
         camera.release()
         writer.release()
         cv2.destroyAllWindows()
+        return self.timestamps
 
     def draw_text(self, frame):
         # show the movement deltas and the direction of movement on the frame
@@ -207,13 +209,13 @@ class Tracker:
 
                     # ensure significant movement in both directions
                     if np.abs(self.dX) > 20:
-                        dirX = "East" if np.sign(self.dX) == 1 else "West"
+                        dirX = "E" if np.sign(self.dX) == 1 else "W"
                     if np.abs(self.dY) > 20:
-                        dirY = "North" if np.sign(self.dY) == 1 else "South"
+                        dirY = "N" if np.sign(self.dY) == 1 else "S"
 
                     # handle when both directions are non-empty
                     if dirX != "" and dirY != "":
-                        self.direction = "{}-{}".format(dirY, dirX)
+                        self.direction = "{}{}".format(dirY, dirX)
 
                     # otherwise, only one direction is empty
                     else:
@@ -278,7 +280,8 @@ class Tracker:
         return center, x, y, radius
 
 
-def start(video_path, coordinates_roi, time_roi, output_video_id):
+def start(video_path, coordinates_roi, time_roi, output_video_id, options):
+    print "--> made it to start"
     print video_path
     print coordinates_roi
     '''
@@ -287,7 +290,8 @@ def start(video_path, coordinates_roi, time_roi, output_video_id):
     roi_hist = cv2.calcHist([bounding_box], [0], None, [16], [0, 180])
     roi_hist = cv2.normalize(roi_hist, roi_hist, 0, 255, cv2.NORM_MINMAX)
     '''
-    tracker = Tracker(camera = video_path)
+    tracker = Tracker(options, camera = video_path)
+    print "--> initialized tracker object"
     #roi = np.array([[450, 200], [500, 200], [500, 300], [450, 300]])
     #(w, h) = bounding_box.shape[:2]
 
